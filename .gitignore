@@ -1,0 +1,5 @@
+# Виртуальное окружение Python
+venv/
+env/
+.venv/
+ENV/
