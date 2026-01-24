@@ -90,7 +90,7 @@ class View(QMainWindow):
         self.items = ["PNG","JPEG","JPG"]
         self.combo.addItems(self.items)
         self.combo.move(100,100)  
-
+        self.combo.currentTextChanged.connect(self.controller.change_box)
 
 
 class Controller:
@@ -117,9 +117,14 @@ class Controller:
 
     def load_setting(self):
         path = self.settings.value("save_path", )
+        format = self.settings.value("format", )
         if path :
             self.view.save_inp.setText(path)
-
+        if format :
+            self.view.combo.setCurrentText(format)
+    def change_box(self,text):
+        self.settings.setValue("format", text)
+        
 if __name__ == "__main__":
     app = QApplication([])
     controller = Controller()
