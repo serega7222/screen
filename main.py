@@ -104,9 +104,18 @@ class View(QMainWindow):
 
         self.trey_menu = QMenu()
 
+        #Показать кнопка
         self.button_show = QAction("Показать",self)
-        #self.button_show.clicked
+        self.button_show.triggered.connect(self.controller.button_show_clicked)
         self.trey_menu.addAction(self.button_show)
+
+        self.trey_menu.addSeparator()
+
+        #Кнопка выйти
+        self.button_exit = QAction("Выйти",self)
+        self.button_exit.triggered.connect(self.controller.button_exit_clicked)
+        self.trey_menu.addAction(self.button_exit)
+
         self.tray_icon.setContextMenu(self.trey_menu)
         # Cообщение
         self.tray_icon.showMessage(
@@ -116,12 +125,11 @@ class View(QMainWindow):
             2000
         )
 
-       
-    def button_show_clicked(self):
-        print("НАжата кнопка показать")
     def closeEvent(self, event):
         # Вместо закрытия - сворачиваем в трей
-        print("sss")      
+        print("sss")                  
+
+
         
 class Controller:
     def __init__(self):
@@ -154,7 +162,13 @@ class Controller:
             self.view.combo.setCurrentText(format)
     def change_box(self,text):
         self.settings.setValue("format", text)
-        
+
+    def button_show_clicked(self):
+        print("НАжата кнопка показать")  
+
+    def button_exit_clicked(self):
+        print("Нажат кнока выйти")
+   
 if __name__ == "__main__":
     app = QApplication([])
     controller = Controller()
