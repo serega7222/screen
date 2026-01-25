@@ -62,7 +62,7 @@ class View(QMainWindow):
         self.setFixedSize(500, 400)
         self.setWindowTitle("Скриншотер экрана")
         self.load_ui()
-        self.load_trey() 
+        
     def load_ui(self):
         window_shortcut = QShortcut(QKeySequence("Ctrl+S"),self)
         window_shortcut.activated.connect(self.controller.run_screen)
@@ -120,15 +120,15 @@ class View(QMainWindow):
         # Cообщение
         self.tray_icon.showMessage(
             "Приложение запущено",
-            "Программа работает в системном трее",
+            "Программа работает в системном трее для скриншота нажмите Ctrl+S",
             QSystemTrayIcon.Information,
             2000
         )
 
     def closeEvent(self, event):
         # Вместо закрытия - сворачиваем в трей
-        print("sss")                  
-
+        QApplication.instance().setQuitOnLastWindowClosed(False)          
+        self.load_trey() 
 
         
 class Controller:
@@ -164,10 +164,12 @@ class Controller:
         self.settings.setValue("format", text)
 
     def button_show_clicked(self):
-        print("НАжата кнопка показать")  
+        self.view.show()
+        self.view.activateWindow()
 
     def button_exit_clicked(self):
-        print("Нажат кнока выйти")
+        self.view.tray_icon.hide()
+        QApplication.quit()
    
 if __name__ == "__main__":
     app = QApplication([])
