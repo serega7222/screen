@@ -62,7 +62,7 @@ class View(QMainWindow):
         self.setFixedSize(500, 400)
         self.setWindowTitle("Скриншотер экрана")
         self.load_ui()
-
+        self.load_trey() 
     def load_ui(self):
         window_shortcut = QShortcut(QKeySequence("Ctrl+S"),self)
         window_shortcut.activated.connect(self.controller.run_screen)
@@ -92,7 +92,37 @@ class View(QMainWindow):
         self.combo.move(100,100)  
         self.combo.currentTextChanged.connect(self.controller.change_box)
 
+    def load_trey(self):
+        # Создаем иконку трея
+        self.tray_icon = QSystemTrayIcon(self)
+        
+        # УСТАНАВЛИВАЕМ ИКОНКУ - это обязательно!
+        self.tray_icon.setIcon(self.style().standardIcon(
+            self.style().StandardPixmap.SP_ComputerIcon))
+        
+        self.tray_icon.show()
 
+        self.trey_menu = QMenu()
+
+        self.button_show = QAction("Показать",self)
+        #self.button_show.clicked
+        self.trey_menu.addAction(self.button_show)
+        self.tray_icon.setContextMenu(self.trey_menu)
+        # Cообщение
+        self.tray_icon.showMessage(
+            "Приложение запущено",
+            "Программа работает в системном трее",
+            QSystemTrayIcon.Information,
+            2000
+        )
+
+       
+    def button_show_clicked(self):
+        print("НАжата кнопка показать")
+    def closeEvent(self, event):
+        # Вместо закрытия - сворачиваем в трей
+        print("sss")      
+        
 class Controller:
     def __init__(self):
         self.view = View(self)
