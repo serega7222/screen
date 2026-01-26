@@ -1,0 +1,15 @@
+
+
+QCheckBox::indicator {
+    width: 10x;   /* Ширина индикатора */
+    height: 10px;  /* Высота индикатора */
+    
+    border-radius: 5px;
+    background-color: rgb(255, 255, 255);
+}
+
+QCheckBox::indicator {
+  background-image: url(icon/check.png); 
+  width: 40px; 
+  height: 40px; 
+}

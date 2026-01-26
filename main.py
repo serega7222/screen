@@ -27,7 +27,7 @@ class HotkeyThread(QThread):
         self.running = False
         keyboard.unhook_all()
 
-class ScreenSelector(QWidget):
+class ScreenSelector(QMainWindow):
     def __init__(self):
         super().__init__()
         # Окно на весь экран, без рамок, поверх остальных
@@ -50,22 +50,24 @@ class ScreenSelector(QWidget):
 
     def mouseReleaseEvent(self, event):
         self.selected_rect = self.rubber_band.geometry()
-        x, y, width, height = self.rubber_band.geometry().getRect()
+        #x, y, width, height = self.rubber_band.geometry().getRect()
         self.load_screen_ui()
         
     def load_screen_ui(self):
-        self.btn = QPushButton("📷", self)
-        self.btn.setStyleSheet("background-color: white; color: white;")
+        self.chek_box = QCheckBox(self)
         x = self.selected_rect.x() + (self.selected_rect.width()) 
         y = self.selected_rect.y() + (self.selected_rect.height() ) 
-        self.btn.move(x,y)
-        self.btn.clicked.connect(self.click_button)
-        
-        self.btn.show()
+        self.chek_box.move(x,y-20)
+        self.chek_box.clicked.connect(self.click_button)
+        self.chek_box.show()
     
     def click_button(self):
         self.rubber_band.hide()
         self.close() # Закрыть окно после выбора
+        self.save()
+        
+    def save(self):
+        print("Сохраненно на пк")    
         
 
 
@@ -188,6 +190,9 @@ class Controller:
    
 if __name__ == "__main__":
     app = QApplication([])
+    style_file = "style.css"  # Замените на путь к вашему файлу стилей
+    with open(style_file, "r",encoding="UTF-8") as file:
+        app.setStyleSheet(file.read())    
     controller = Controller()
     hotkey_thread = HotkeyThread()
     hotkey_thread.hotkey_triggered.connect(controller.run_screen)
