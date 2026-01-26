@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QLineEdit, QFileDialog, QSystemTrayIcon, QMenu,QCheckBox,QComboBox
 from PySide6.QtWidgets import QApplication, QWidget, QRubberBand
 from PySide6.QtCore import Qt, QRect, QSize, QThread, Signal, QObject,QSettings
-from PySide6.QtGui import QKeySequence, QShortcut, QIcon, QAction ,QKeyEvent
+from PySide6.QtGui import QKeySequence, QShortcut, QIcon, QAction ,QKeyEvent , QPalette, QBrush, QColor
 import keyboard
 import threading
 
@@ -16,7 +16,7 @@ class HotkeyThread(QThread):
         
     def run(self):
         # Регистрируем глобальную горячую клавишу Ctrl+S
-        keyboard.add_hotkey('ctrl+s', self.trigger_hotkey)
+        keyboard.add_hotkey('ctrl+shift', self.trigger_hotkey)
         # Блокируем поток, пока не будет остановлен
         keyboard.wait()
         
@@ -32,12 +32,13 @@ class ScreenSelector(QWidget):
         super().__init__()
         # Окно на весь экран, без рамок, поверх остальных
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.CustomizeWindowHint)
-        self.setWindowOpacity(0.3) # Полупрозрачность для видимости экрана
+        self.setWindowOpacity(0.6) 
         self.setWindowState(Qt.WindowFullScreen)
-        
+        self.setStyleSheet("background-color: rgba(0, 0, 0,255);") 
         self.rubber_band = QRubberBand(QRubberBand.Rectangle, self)
+        self.rubber_band.setStyleSheet("background-color: rgba(0, 0, 0, 0);") 
         self.origin = None
-
+        
     def mousePressEvent(self, event):
         self.origin = event.pos()
         self.rubber_band.setGeometry(QRect(self.origin, QSize()))
@@ -48,11 +49,24 @@ class ScreenSelector(QWidget):
             self.rubber_band.setGeometry(QRect(self.origin, event.pos()).normalized())
 
     def mouseReleaseEvent(self, event):
-        selected_rect = self.rubber_band.geometry()
-        print(f"Выбранная область: {selected_rect}")
+        self.selected_rect = self.rubber_band.geometry()
+        x, y, width, height = self.rubber_band.geometry().getRect()
+        self.load_screen_ui()
+        
+    def load_screen_ui(self):
+        self.btn = QPushButton("📷", self)
+        self.btn.setStyleSheet("background-color: white; color: white;")
+        x = self.selected_rect.x() + (self.selected_rect.width()) 
+        y = self.selected_rect.y() + (self.selected_rect.height() ) 
+        self.btn.move(x,y)
+        self.btn.clicked.connect(self.click_button)
+        
+        self.btn.show()
+    
+    def click_button(self):
         self.rubber_band.hide()
         self.close() # Закрыть окно после выбора
-
+        
 
 
 class View(QMainWindow):
@@ -64,7 +78,7 @@ class View(QMainWindow):
         self.load_ui()
         
     def load_ui(self):
-        window_shortcut = QShortcut(QKeySequence("Ctrl+S"),self)
+        window_shortcut = QShortcut(QKeySequence("ctrl+shift"),self)
         window_shortcut.activated.connect(self.controller.run_screen)
 
         #Кнопки и интерфейсы
@@ -79,7 +93,7 @@ class View(QMainWindow):
         self.search_button.clicked.connect(self.controller.push_search)
         self.lable_hot_key = QLabel("Сделать скрин",self)
         self.lable_hot_key.move(0,50)
-        self.hot_key_button = QPushButton("Ctrl+S",self)
+        self.hot_key_button = QPushButton("ctrl+shift",self)
         self.hot_key_button.move(100,50)
 
         self.lable_save_format = QLabel("Формат ",self)
@@ -127,9 +141,9 @@ class View(QMainWindow):
 
     def closeEvent(self, event):
         # Вместо закрытия - сворачиваем в трей
-        QApplication.instance().setQuitOnLastWindowClosed(False)          
-        self.load_trey() 
-
+        #QApplication.instance().setQuitOnLastWindowClosed(False)          
+        #self.load_trey() 
+        pass
         
 class Controller:
     def __init__(self):
@@ -160,6 +174,7 @@ class Controller:
             self.view.save_inp.setText(path)
         if format :
             self.view.combo.setCurrentText(format)
+            
     def change_box(self,text):
         self.settings.setValue("format", text)
 
