@@ -1,15 +1,60 @@
+/*Сохранить в буффер*/
+QCheckBox#buffer_button::indicator {
+    width: 40px;   /* Ширина индикатора */
+    height: 40px;  /* Высота индикатора */
+    /*border: 5px solid #020202;*/
+    border-radius: 5px;
+    background-color: rgb(255, 255, 255);
+}
+
+QCheckBox#buffer_button::indicator {
+  background-image: url(icon/copy.png); 
+  width: 40px; 
+  height: 40px; 
+}
+
+QCheckBox#buffer_button::indicator:hover {
+    background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
+}
 
 
-QCheckBox::indicator {
-    width: 10x;   /* Ширина индикатора */
-    height: 10px;  /* Высота индикатора */
+
+/*Сохранить на пк*/
+QCheckBox#save_button::indicator {
+    width: 40px;   /* Ширина индикатора */
+    height: 40px;  /* Высота индикатора */
+    /*border: 5px solid #020202;*/
+    border-radius: 5px;
+    background-color: rgb(255, 255, 255);
+}
+
+QCheckBox#save_button::indicator {
+  background-image: url(icon/floppy-disk.png); 
+  width: 40px; 
+  height: 40px; 
+}
+
+QCheckBox#save_button::indicator:hover {
+    background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
+}
+
+
+/* Кнопка выхода*/
+QCheckBox#exit_button::indicator {
+    width: 40px;   /* Ширина индикатора */
+    height: 40px;  /* Высота индикатора */
     
     border-radius: 5px;
     background-color: rgb(255, 255, 255);
 }
 
-QCheckBox::indicator {
-  background-image: url(icon/check.png); 
+QCheckBox#exit_button::indicator {
+  background-image: url(icon/sign-out.png); 
   width: 40px; 
   height: 40px; 
+}
+
+/* При наведении изменяем фон индикатора */
+QCheckBox#exit_button::indicator:hover {
+    background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
 }

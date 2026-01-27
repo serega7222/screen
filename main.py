@@ -1,11 +1,11 @@
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QLineEdit, QFileDialog, QSystemTrayIcon, QMenu,QCheckBox,QComboBox
-from PySide6.QtWidgets import QApplication, QWidget, QRubberBand
-from PySide6.QtCore import Qt, QRect, QSize, QThread, Signal, QObject,QSettings
-from PySide6.QtGui import QKeySequence, QShortcut, QIcon, QAction ,QKeyEvent , QPalette, QBrush, QColor
+from PySide6.QtWidgets import QApplication,  QRubberBand
+from PySide6.QtCore import Qt, QRect, QSize, QThread, Signal,QSettings
+from PySide6.QtGui import QKeySequence, QShortcut,  QAction ,QRegion
 import keyboard
-import threading
-
-
+from PIL import Image, ImageGrab
+import io
+import win32clipboard
 
 class HotkeyThread(QThread):
     hotkey_triggered = Signal()
@@ -38,37 +38,81 @@ class ScreenSelector(QMainWindow):
         self.rubber_band = QRubberBand(QRubberBand.Rectangle, self)
         self.rubber_band.setStyleSheet("background-color: rgba(0, 0, 0, 0);") 
         self.origin = None
+        self.screen_on = True
         
     def mousePressEvent(self, event):
-        self.origin = event.pos()
-        self.rubber_band.setGeometry(QRect(self.origin, QSize()))
-        self.rubber_band.show()
-
+        if self.screen_on:
+            self.origin = event.pos()
+            self.rubber_band.setGeometry(QRect(self.origin, QSize()))
+            self.rubber_band.show()
+            self.screen_on = False
+        else:
+            self.exit()    
     def mouseMoveEvent(self, event):
         if self.origin:
             self.rubber_band.setGeometry(QRect(self.origin, event.pos()).normalized())
 
     def mouseReleaseEvent(self, event):
         self.selected_rect = self.rubber_band.geometry()
-        #x, y, width, height = self.rubber_band.geometry().getRect()
+        self.x, self.y, self.width, self.height = self.rubber_band.geometry().getRect()
+        self.x1, self.y1, self.x2, self.y2 = self.x, self.y, self.x + self.width, self.y + self.height
+        self.create_selection_hole()
         self.load_screen_ui()
+    def create_selection_hole(self):
+        region = QRegion(QRect(0, 0, self.width(), self.height()))
+        selected_region = QRegion(self.selected_rect)
         
+        # Вычитаем область выделения - она станет прозрачной
+        masked_region = region.subtracted(selected_region)
+        self.setMask(masked_region)        
     def load_screen_ui(self):
-        self.chek_box = QCheckBox(self)
+        
         x = self.selected_rect.x() + (self.selected_rect.width()) 
-        y = self.selected_rect.y() + (self.selected_rect.height() ) 
-        self.chek_box.move(x,y-20)
-        self.chek_box.clicked.connect(self.click_button)
-        self.chek_box.show()
-    
-    def click_button(self):
+        y = self.selected_rect.y() + (self.selected_rect.height() )
+
+
+        self.buffer_button = QCheckBox(self)
+        self.buffer_button.move(x,y-30)
+        self.buffer_button.setObjectName("buffer_button")
+        self.buffer_button.clicked.connect(self.click_save_buffer)
+        self.buffer_button.show()
+
+        self.save_button = QCheckBox(self) 
+        self.save_button.move(x,y-60)
+        self.save_button.clicked.connect(self.click_save_button)
+        self.save_button.setObjectName("save_button")
+        self.save_button.show()
+
+
+        # self.exit_button = QCheckBox(self)
+        # self.exit_button.move(x,y-90)
+        # self.exit_button.clicked.connect(self.click_exit_button)
+        # self.exit_button.setObjectName("exit_button")
+        # self.exit_button.show()
+
+
+    def exit(self):
         self.rubber_band.hide()
         self.close() # Закрыть окно после выбора
-        self.save()
-        
-    def save(self):
-        print("Сохраненно на пк")    
-        
+
+    def click_save_button(self):
+        print("Нажато сохранить на пк")
+        self.exit()
+
+    # def click_exit_button(self):
+    #     print("Нажато выйти")    
+    #     self.exit()
+    def click_save_buffer(self):
+        self.img = ImageGrab.grab(bbox=(self.x1, self.y1, self.x2, self.y2))
+        self.output = io.BytesIO()
+        self.img.convert('RGB').save(self.output, 'BMP')   
+        data = self.output.getvalue()[14:]  # Убираем заголовок BMP
+        self.output.close()
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+        win32clipboard.CloseClipboard()                   
+        self.exit()  
 
 
 class View(QMainWindow):
