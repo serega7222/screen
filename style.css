@@ -39,8 +39,8 @@ QCheckBox#save_button::indicator:hover {
 }
 
 
-/* Кнопка выхода*/
-QCheckBox#exit_button::indicator {
+/* Кнопка рисовать*/
+QCheckBox#draw_button::indicator {
     width: 40px;   /* Ширина индикатора */
     height: 40px;  /* Высота индикатора */
     
@@ -48,13 +48,13 @@ QCheckBox#exit_button::indicator {
     background-color: rgb(255, 255, 255);
 }
 
-QCheckBox#exit_button::indicator {
-  background-image: url(icon/sign-out.png); 
+QCheckBox#draw_button::indicator {
+  background-image: url(icon/pencil.png); 
   width: 40px; 
   height: 40px; 
 }
 
 /* При наведении изменяем фон индикатора */
-QCheckBox#exit_button::indicator:hover {
+QCheckBox#draw_button::indicator:hover {
     background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
 }

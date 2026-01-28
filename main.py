@@ -1,11 +1,14 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QLineEdit, QFileDialog, QSystemTrayIcon, QMenu,QCheckBox,QComboBox
-from PySide6.QtWidgets import QApplication,  QRubberBand
+from PySide6.QtWidgets import (QApplication, QMainWindow, QPushButton, QLabel, QLineEdit,
+                                QFileDialog, QSystemTrayIcon, QMenu,QCheckBox,QComboBox,
+                                QMessageBox,QRubberBand,QColorDialog)
+
 from PySide6.QtCore import Qt, QRect, QSize, QThread, Signal,QSettings
-from PySide6.QtGui import QKeySequence, QShortcut,  QAction ,QRegion
+from PySide6.QtGui import QKeySequence, QShortcut,  QAction ,QRegion,QPainter,QImage,QColor,QBrush
 import keyboard
-from PIL import Image, ImageGrab
+from PIL import  ImageGrab
 import io
 import win32clipboard
+from playsound import playsound
 
 class HotkeyThread(QThread):
     hotkey_triggered = Signal()
@@ -13,16 +16,13 @@ class HotkeyThread(QThread):
     def __init__(self):
         super().__init__()
         self.running = True
-        
     def run(self):
         # Регистрируем глобальную горячую клавишу Ctrl+S
         keyboard.add_hotkey('ctrl+shift', self.trigger_hotkey)
         # Блокируем поток, пока не будет остановлен
         keyboard.wait()
-        
     def trigger_hotkey(self):
         self.hotkey_triggered.emit()
-        
     def stop(self):
         self.running = False
         keyboard.unhook_all()
@@ -36,7 +36,6 @@ class ScreenSelector(QMainWindow):
         self.setWindowState(Qt.WindowFullScreen)
         self.setStyleSheet("background-color: rgba(0, 0, 0,255);") 
         self.rubber_band = QRubberBand(QRubberBand.Rectangle, self)
-        self.rubber_band.setStyleSheet("background-color: rgba(0, 0, 0, 0);") 
         self.origin = None
         self.screen_on = True
         
@@ -58,13 +57,20 @@ class ScreenSelector(QMainWindow):
         self.x1, self.y1, self.x2, self.y2 = self.x, self.y, self.x + self.width, self.y + self.height
         self.create_selection_hole()
         self.load_screen_ui()
-    def create_selection_hole(self):
-        region = QRegion(QRect(0, 0, self.width(), self.height()))
-        selected_region = QRegion(self.selected_rect)
         
-        # Вычитаем область выделения - она станет прозрачной
-        masked_region = region.subtracted(selected_region)
-        self.setMask(masked_region)        
+    def create_selection_hole(self):
+        """Создает 'дырку' в затемненном экране"""
+        if not self.selected_rect:
+            return
+        #Получаем размер всего экрана
+        screen_rect = self.screen().geometry()
+        #Устанавливем регион весь экран
+        region = QRegion(screen_rect)
+        #Вычитаем выделеныые 
+        region = region.subtracted((self.selected_rect))
+        #Устанавливем 
+        self.setMask(region)    
+        
     def load_screen_ui(self):
         
         x = self.selected_rect.x() + (self.selected_rect.width()) 
@@ -83,14 +89,29 @@ class ScreenSelector(QMainWindow):
         self.save_button.setObjectName("save_button")
         self.save_button.show()
 
+        
+        self.draw_button = QCheckBox(self) 
+        self.draw_button.move(x,y-90)
+        self.draw_button.clicked.connect(self.click_draw_button)
+        self.draw_button.setObjectName("draw_button")
+        self.draw_button.show()
 
-        # self.exit_button = QCheckBox(self)
-        # self.exit_button.move(x,y-90)
-        # self.exit_button.clicked.connect(self.click_exit_button)
-        # self.exit_button.setObjectName("exit_button")
-        # self.exit_button.show()
-
-
+    def click_draw_button(self):
+        dialog = QColorDialog()
+        dialog.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
+        dialog.setStyleSheet("""
+            QColorDialog, QWidget {
+                background-color: white;
+                color: black;
+            }
+        """)
+        
+        #dialog.setCurrentColor(QColor(Qt.black))
+        
+        if dialog.exec():
+            color = dialog.selectedColor()
+            if color.isValid():
+                print(f"Выбран цвет: {color.name()}")            
     def exit(self):
         self.rubber_band.hide()
         self.close() # Закрыть окно после выбора
@@ -99,20 +120,33 @@ class ScreenSelector(QMainWindow):
         print("Нажато сохранить на пк")
         self.exit()
 
-    # def click_exit_button(self):
-    #     print("Нажато выйти")    
-    #     self.exit()
+    def show_popup(self, message):
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle("Ошибка")
+        msg_box.setIcon(QMessageBox.Information)
+        msg_box.setText(message)
+        msg_box.exec()        
+        
     def click_save_buffer(self):
-        self.img = ImageGrab.grab(bbox=(self.x1, self.y1, self.x2, self.y2))
-        self.output = io.BytesIO()
-        self.img.convert('RGB').save(self.output, 'BMP')   
-        data = self.output.getvalue()[14:]  # Убираем заголовок BMP
-        self.output.close()
-        win32clipboard.OpenClipboard()
-        win32clipboard.EmptyClipboard()
-        win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
-        win32clipboard.CloseClipboard()                   
-        self.exit()  
+        try:
+            self.img = ImageGrab.grab(bbox=(self.x1, self.y1, self.x2, self.y2))
+            self.output = io.BytesIO()
+            self.img.convert('RGB').save(self.output, 'BMP')   
+            data = self.output.getvalue()[14:]  # Убираем заголовок BMP
+            self.output.close()
+            win32clipboard.OpenClipboard()
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+            win32clipboard.CloseClipboard()                   
+            self.exit()  
+            playsound('sound\sound.mp3')
+        except Exception as e :
+            if str(e) == "tile cannot extend outside image":
+                self.exit()
+                self.show_popup("Нельзя сделан скриншот пустого пространства")
+            else:
+                self.exit()
+                self.show_popup(f"{e}")
 
 
 class View(QMainWindow):
@@ -186,9 +220,9 @@ class View(QMainWindow):
         )
 
     def closeEvent(self, event):
-        # Вместо закрытия - сворачиваем в трей
-        #QApplication.instance().setQuitOnLastWindowClosed(False)          
-        #self.load_trey() 
+        #Вместо закрытия - сворачиваем в трей
+        # QApplication.instance().setQuitOnLastWindowClosed(False)          
+        # self.load_trey() 
         pass
         
 class Controller:
