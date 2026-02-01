@@ -4,3 +4,4 @@ env/
 .venv/
 ENV/
 test.py
+test2.py
