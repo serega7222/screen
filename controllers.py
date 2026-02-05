@@ -1,0 +1,159 @@
+#controllers.py
+from log import *
+from PySide6.QtWidgets import QFileDialog                                
+from model import *
+from views import *
+from PySide6.QtCore import  QThread, Signal
+import keyboard
+
+class HotKey(QThread):
+    """Отслеживает горячие клавишы"""
+    hot_key_signal = Signal(str)
+    screen_signal = Signal()
+    def __init__(self,):
+        super().__init__()
+        self.lst_hot_key = set()
+        
+    def run(self):
+        self.flag = True
+        keyboard.on_press(self.key_pressed)
+        logger.info("Отслеживание нажатий")
+        while self.flag:
+            self.msleep(100)  # Не грузит CPU
+
+    def check_press_hot_key(self):
+        keyboard.add_hotkey('ctrl+shift', self.trigger_hotkey)
+
+    def trigger_hotkey(self): 
+        logger.info("Нажаты горячие клавишы")
+        self.screen_signal.emit()
+
+    def key_pressed(self,event):
+        if self.flag:
+            self.lst_hot_key.add(event.name)
+            if len(self.lst_hot_key) == 2 :
+                text = "+".join(self.lst_hot_key)
+                self.hot_key_signal.emit(text)
+                self.lst_hot_key.clear()
+                self.pause()
+            
+    def pause(self):
+        self.flag = False
+
+    def stop(self):
+        keyboard.unhook_all()
+        super().quit() 
+
+
+class Controller:
+    def __init__(self):
+        self.model = Model()
+        self.view = View()
+        self.th = HotKey()
+        self.screen = ScreenSelector()
+        self.th.check_press_hot_key()
+        self.load_input()
+        self.load_hot_key()
+
+
+        #подключить сигналы
+        self.connect_signal()
+
+    #подключает сигналы          
+    def connect_signal(self):
+        self.view.search_signal.connect(self.push_search_button)
+        self.view.hot_key_button_signal.connect(self.click_hot_button)
+        self.th.hot_key_signal.connect(self.update_btn_text)
+        self.th.screen_signal.connect(self.run_screen)
+        self.screen.save_buffer_signal.connect(self.click_save_buffer)
+        self.screen.draw_signal.connect(self.click_draw_button)
+        
+    #кнопка обзор    
+    def push_search_button(self):
+        logger.info("Нажата кнопка путь сохранения")
+        try:
+            logger.info("Открыто окно выбора папки")
+            self.folder = QFileDialog.getExistingDirectory(
+                self.view,  # родительское окно
+                "Выберите папку",  # заголовок
+                "",  # начальная директория
+                QFileDialog.Option.ShowDirsOnly  # опции
+            )  
+            if self.folder:
+                self.model.save_path(self.folder)
+                
+                logger.success("Папка выбрана путь сохранен в HKEY_CURRENT_USER\SOFTWARE\MyApp")
+
+            else:
+                logger.info("Папка отменина")
+        except Exception as e:
+            logger.error(f"Проблемма с кнопкой обзор {e}") 
+
+
+
+    def load_input(self):
+        path = self.model.load_path()
+        self.view.input_text(path)
+
+    def click_hot_button(self):
+        self.th.start()
+        self.view.status_lable_prepare()
+        
+    #срабатывает после того как в множесте 2 элемента
+    #Обновляет кнопку,лейбл,и сохранеяет 
+    def update_btn_text(self,text):
+        self.view.status_lable_ready()
+        self.view.update_btn(text)
+        self.model.save_hot_key(text)
+
+    def load_hot_key(self):
+        keys = self.model.load_hot_key()
+        self.view.load_hot_key(keys)
+        
+    #запускает выделение экрана
+    def run_screen(self):
+        self.screen.show()
+        self.screen.clear()
+    #Нажатие на скохранить в буффер 
+    def click_save_buffer(self,x1, y1,x2, y2):
+        try:
+            logger.info("Нажато сохрнаить в буфере")
+            self.img = ImageGrab.grab(bbox=(x1, y1, x2,y2))
+            self.output = io.BytesIO()
+            self.img.convert('RGB').save(self.output, 'BMP')   
+            data = self.output.getvalue()[14:]  # Убираем заголовок BMP
+            self.output.close()
+            win32clipboard.OpenClipboard()
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+            win32clipboard.CloseClipboard() 
+            logger.success("Успешно сохраненно в буфер")                  
+            self.screen.exit()
+            #playsound('sound\sound.mp3')
+            
+        except Exception as e :
+            if str(e) == "tile cannot extend outside image":
+                self.screen.exit()
+                self.screen.show_popup("Нельзя сделан скриншот пустого пространства")
+                logger.info("Попытка сделать скриншот пустого окна")
+            else:
+                self.screen.exit()
+                self.screen.show_popup(f"{e}")
+                logger.error("Ошибка,не удалось сохранить в буффер")
+
+    def click_draw_button(self):
+        dialog = QColorDialog()
+        dialog.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
+        dialog.setStyleSheet("""
+            QColorDialog, QWidget {
+                background-color: white;
+                color: black;
+            }
+        """)
+        
+        dialog.setCurrentColor(QColor(Qt.black))
+        
+        if dialog.exec():
+            color = dialog.selectedColor()
+            if color.isValid():
+                print(f"Выбран цвет: {color.name()}")                     
