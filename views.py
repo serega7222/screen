@@ -139,20 +139,20 @@ class View(QMainWindow):
             self.setFixedSize(500, 400)
             self.setWindowTitle("Скриншотер экрана")    
             #Кнопки и интерфейсы
-            self._save = QLabel("Куда сохранить",self)
+            self.label_save = QLabel("Куда сохранить",self)
             self.inp = QLineEdit(self)
             self.inp.move(100,2)
             self.inp.resize(300,25)
             self.search_button = QPushButton("Обзор",self)
             self.search_button.move(400,0)
             self.search_button.clicked.connect(self.click_search_signal)
-            self._hot_key = QLabel("Сделать скрин",self)
-            self._hot_key.move(0,50)
+            self.label_hot_key = QLabel("Сделать скрин",self)
+            self.label_hot_key.move(0,50)
             self.hot_key_button = QPushButton("ctrl+shift",self)
             self.hot_key_button.move(100,50)
             self.hot_key_button.clicked.connect(self.click_hot_key_signal)
-            self.status_ = QLabel(" ",self)
-            self.status_.move(200,50)
+            self.status_label = QLabel(" ",self)
+            self.status_label.move(200,50)
             self.show()
             logger.success("Интерфейс ui успешно загружен")
             
@@ -168,11 +168,11 @@ class View(QMainWindow):
     def input_text(self,path):
         self.inp.setText(path)
 
-    def status__prepare(self):
-        self.status_.setText("Подготовка")
+    def status_label_prepare(self):
+        self.status_label.setText("Подготовка")
 
-    def status__ready(self):
-        self.status_.setText(" ")
+    def status_label_ready(self):
+        self.status_label.setText(" ")
 
     def update_btn(self,text):
         self.hot_key_button.setText(text)      
