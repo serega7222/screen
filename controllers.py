@@ -97,12 +97,12 @@ class Controller:
 
     def click_hot_button(self):
         self.th.start()
-        self.view.status_lable_prepare()
+        self.view.status_label_prepare()
         
     #срабатывает после того как в множесте 2 элемента
     #Обновляет кнопку,лейбл,и сохранеяет 
     def update_btn_text(self,text):
-        self.view.status_lable_ready()
+        self.view.status_label_ready()
         self.view.update_btn(text)
         self.model.save_hot_key(text)
 
