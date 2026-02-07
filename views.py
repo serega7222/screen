@@ -1,18 +1,19 @@
 #views.py
 from PySide6.QtWidgets import (QApplication, QMainWindow, QPushButton, QLabel, QLineEdit,
                                 QFileDialog, QSystemTrayIcon, QMenu,QCheckBox,QComboBox,
-                                QMessageBox,QRubberBand,QColorDialog)
+                                QMessageBox,QRubberBand,QColorDialog,QGridLayout,QVBoxLayout)
 from log import *
 from PySide6.QtCore import Qt, QRect, QSize, QThread, Signal,QSettings ,qDebug, qInfo, qWarning, qCritical
-from PySide6.QtGui import QKeySequence, QShortcut,  QAction ,QRegion,QPainter,QImage,QColor,QBrush
-from PIL import  ImageGrab
-import io
+from PySide6.QtGui import QKeySequence, QShortcut,  QAction ,QRegion,QPainter,QImage,QColor,QBrush, QIcon
+
 import win32clipboard
+from PySide6.QtWidgets import QWidget
 
 class ScreenSelector(QMainWindow):
     """Создает то самое выделение"""
     save_buffer_signal = Signal(int, int, int, int)
     draw_signal = Signal()
+    click_save_signal = Signal(int, int, int, int)
     def __init__(self):
         super().__init__()
         # Окно на весь экран, без рамок, поверх остальных
@@ -27,9 +28,12 @@ class ScreenSelector(QMainWindow):
     def clear(self):
         """Очищает выделение и сбрасывает состояние"""
         #удаление кнопко
-        self.buffer_button.deleteLater()
-        self.save_button.deleteLater()
-        self .draw_button.deleteLater()        
+        if hasattr(self, 'buffer_button'):
+            self.buffer_button.deleteLater()
+        if hasattr(self, 'save_button'):
+            self.save_button.deleteLater()
+        if hasattr(self, 'draw_button'):
+            self.draw_button.deleteLater()  
         # Скрываем резиновую ленту
         self.rubber_band.hide()
         # Сбрасываем переменные состояния
@@ -74,43 +78,50 @@ class ScreenSelector(QMainWindow):
         region = QRegion(screen_rect)
         #Вычитаем выделеныые 
         region = region.subtracted((self.selected_rect))
+        
         #Устанавливем 
         self.setMask(region)    
         
     def load_screen_ui(self):
+        # Получаем координаты справа от выделенной области
+        x = self.selected_rect.x() + self.selected_rect.width()
+        y = self.selected_rect.y()
         
-        x = self.selected_rect.x() + (self.selected_rect.width()) 
-        y = self.selected_rect.y() + (self.selected_rect.height() )
-
-
-        self.buffer_button = QCheckBox(self)
-        self.buffer_button.move(x,y-30)
+        # Создаем контейнер для виджетов
+        self.tool_container = QWidget(self)
+        self.tool_container.setGeometry(x, y, 150, 200)  # x, y, width, height
+        
+        # Создаем layout для контейнера
+        layout = QVBoxLayout(self.tool_container)
+        
+        # Создаем кнопки с родителем tool_container
+        self.buffer_button = QCheckBox("Buffer", self.tool_container)
         self.buffer_button.setObjectName("buffer_button")
         self.buffer_button.clicked.connect(self.click_save_buffer)
-        self.buffer_button.show()
-
-        self.save_button = QCheckBox(self) 
-        self.save_button.move(x,y-60)
+        
+        self.save_button = QCheckBox("Save", self.tool_container) 
         self.save_button.clicked.connect(self.click_save_button)
         self.save_button.setObjectName("save_button")
-        self.save_button.show()
-
         
-        self.draw_button = QCheckBox(self) 
-        self.draw_button.move(x,y-90)
+        self.draw_button = QCheckBox("Draw", self.tool_container) 
         self.draw_button.clicked.connect(self.click_draw_button)
         self.draw_button.setObjectName("draw_button")
-        self.draw_button.show()
-
-
-                      
+        
+        # Добавляем в layout
+        layout.addWidget(self.buffer_button)
+        layout.addWidget(self.save_button)
+        layout.addWidget(self.draw_button)
+        #layout.addStretch()
+        
+        self.tool_container.show()
+        
     def exit(self):
         self.rubber_band.hide()
         self.clear()
         self.close() # Закрыть окно после выбора
 
     def click_save_button(self):
-        print("Нажато сохранить на пк")
+        self.click_save_signal.emit(self.x1, self.y1, self.x2, self.y2)
         self.exit()
 
     def show_popup(self, message):
@@ -119,45 +130,66 @@ class ScreenSelector(QMainWindow):
         msg_box.setIcon(QMessageBox.Information)
         msg_box.setText(message)
         msg_box.exec()        
+
     #сигналы    
     def click_save_buffer(self):
         self.save_buffer_signal.emit(self.x1, self.y1, self.x2, self.y2)
 
     def click_draw_button(self):
         self.draw_signal.emit()
+
+
+        
 class View(QMainWindow):
     search_signal = Signal()
     hot_key_button_signal = Signal()
+    close_event_signal = Signal(object)
     def __init__(self):
         super().__init__()
         self.load_ui()
         
     def load_ui(self):
         """Настройка пользовательского интерфейса"""
-        try:
-            logger.info("Попытка загрузить ui интерфейс")
-            self.setFixedSize(500, 400)
-            self.setWindowTitle("Скриншотер экрана")    
-            #Кнопки и интерфейсы
-            self.label_save = QLabel("Куда сохранить",self)
-            self.inp = QLineEdit(self)
-            self.inp.move(100,2)
-            self.inp.resize(300,25)
-            self.search_button = QPushButton("Обзор",self)
-            self.search_button.move(400,0)
-            self.search_button.clicked.connect(self.click_search_signal)
-            self.label_hot_key = QLabel("Сделать скрин",self)
-            self.label_hot_key.move(0,50)
-            self.hot_key_button = QPushButton("ctrl+shift",self)
-            self.hot_key_button.move(100,50)
-            self.hot_key_button.clicked.connect(self.click_hot_key_signal)
-            self.status_label = QLabel(" ",self)
-            self.status_label.move(200,50)
-            self.show()
-            logger.success("Интерфейс ui успешно загружен")
-            
-        except Exception as e:
-            logger.error(f"Не удалось загрузить интерфейс {e}")
+        self.setMinimumHeight(100)
+        self.setMinimumWidth(500)
+        self.setWindowTitle("Скриншотер экрана")  
+
+        #  Создаем центральный виджет 
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QGridLayout(central_widget)  
+        
+        #Кнопки и интерфейсы первая строка
+        self._label_save = QLabel("Куда сохранить")
+        self._input_path = QLineEdit()
+        self._search_button = QPushButton("Обзор")
+        self._search_button.clicked.connect(self.click_search_signal)
+        #Кнопки и интерфейсы Вторая строка
+        self._label_hot_key = QLabel("Сделать скрин")
+        self._hot_key_button = QPushButton("ctrl+shift")
+        self._hot_key_button.clicked.connect(self.click_hot_key_signal)
+        self._status_label = QLabel(" ")
+
+        #Первая строка
+        layout.addWidget(self._label_save, 0, 0,)
+        layout.addWidget(self._input_path, 0, 1)
+        layout.addWidget(self._search_button, 0, 2)
+
+        #Вторая строка 
+        layout.addWidget(self._label_hot_key, 1, 0)
+        layout.addWidget(self._hot_key_button, 1, 1)
+        layout.addWidget(self._status_label, 1, 2)
+
+
+        #ПРижимет кверху
+        layout.setRowStretch(0, 0)    
+        layout.setRowStretch(1, 0)   
+        layout.setRowStretch(2, 1)    
+        self.show()
+    
+    def closeEvent(self,event):
+        
+        self.close_event_signal.emit(event)
 
     def click_hot_key_signal(self):
         self.hot_key_button_signal.emit()
@@ -166,17 +198,48 @@ class View(QMainWindow):
         self.search_signal.emit()
 
     def input_text(self,path):
-        self.inp.setText(path)
+        self._input_path.setText(path)
 
     def status_label_prepare(self):
-        self.status_label.setText("Подготовка")
+        self._status_label.setText("Подготовка")
 
     def status_label_ready(self):
-        self.status_label.setText(" ")
+        self._status_label.setText(" ")
 
     def update_btn(self,text):
-        self.hot_key_button.setText(text)      
+        self._hot_key_button.setText(text)      
 
     def load_hot_key(self,text):
-        self.hot_key_button.setText(text)
+        self._hot_key_button.setText(text)
 
+    def return_input_text(self):
+        return self._input_path.text()
+        
+    def show_tray(self):
+        #self.icon_tray = QIcon("icon/copy.png")
+        self.setWindowTitle("Трей-приложение")
+        self.resize(300, 200)
+
+        # --- Настройка трея ---
+        self.tray_icon = QSystemTrayIcon(self)
+        # Используйте свою иконку, например: QIcon("icon.png")
+        self.tray_icon.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_ComputerIcon)) 
+        
+        # Меню трея
+        tray_menu = QMenu()
+        show_action = QAction("Показать", self)
+        quit_action = QAction("Выход", self)
+        
+        show_action.triggered.connect(self.showNormal)
+        quit_action.triggered.connect(QApplication.instance().quit)
+        
+        tray_menu.addAction(show_action)
+        tray_menu.addAction(quit_action)
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.show()
+        self.tray_icon.showMessage(
+            "Приложение свернулось в трей",
+            "Ждя скриншота нажми горячие клавишы",
+            QSystemTrayIcon.MessageIcon.Information,
+            2000
+        )        

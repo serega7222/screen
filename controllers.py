@@ -5,7 +5,10 @@ from model import *
 from views import *
 from PySide6.QtCore import  QThread, Signal
 import keyboard
-
+from PIL import  ImageGrab
+import io
+from datetime import datetime
+import os
 class HotKey(QThread):
     """Отслеживает горячие клавишы"""
     hot_key_signal = Signal(str)
@@ -63,11 +66,15 @@ class Controller:
     def connect_signal(self):
         self.view.search_signal.connect(self.push_search_button)
         self.view.hot_key_button_signal.connect(self.click_hot_button)
+        self.view.close_event_signal.connect(self.close_event)
         self.th.hot_key_signal.connect(self.update_btn_text)
         self.th.screen_signal.connect(self.run_screen)
         self.screen.save_buffer_signal.connect(self.click_save_buffer)
         self.screen.draw_signal.connect(self.click_draw_button)
-        
+        self.screen.click_save_signal.connect(self.click_save_button)
+    
+    def close_event(self):
+        self.view.show_tray()
     #кнопка обзор    
     def push_search_button(self):
         logger.info("Нажата кнопка путь сохранения")
@@ -81,7 +88,7 @@ class Controller:
             )  
             if self.folder:
                 self.model.save_path(self.folder)
-                
+                self.view.input_text(self.folder)
                 logger.success("Папка выбрана путь сохранен в HKEY_CURRENT_USER\SOFTWARE\MyApp")
 
             else:
@@ -92,8 +99,11 @@ class Controller:
 
 
     def load_input(self):
-        path = self.model.load_path()
-        self.view.input_text(path)
+        try:
+            path = self.model.load_path()
+            self.view.input_text(path)
+        except Exception as e :
+            logger.error(e)
 
     def click_hot_button(self):
         self.th.start()
@@ -107,9 +117,11 @@ class Controller:
         self.model.save_hot_key(text)
 
     def load_hot_key(self):
-        keys = self.model.load_hot_key()
-        self.view.load_hot_key(keys)
-        
+        try:
+            keys = self.model.load_hot_key()
+            self.view.load_hot_key(keys)
+        except:
+            pass  
     #запускает выделение экрана
     def run_screen(self):
         self.screen.show()
@@ -156,4 +168,18 @@ class Controller:
         if dialog.exec():
             color = dialog.selectedColor()
             if color.isValid():
-                print(f"Выбран цвет: {color.name()}")                     
+                print(f"Выбран цвет: {color.name()}")       
+
+    def click_save_button(self,x1, y1,x2, y2):
+        try:
+            screenshot = ImageGrab.grab(bbox=(x1, y1,x2, y2))
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            save_folder = self.view.return_input_text()
+            filename = f"screenshot_{timestamp}.png"
+            save_path = os.path.join(save_folder, filename)
+            screenshot.save(save_path, "PNG")
+        except Exception as e :
+            self.screen.exit()
+            logger.error(f"произошла ошибка {e}")
+            self.screen.show_popup(f"Ошибка {e}")
+            
