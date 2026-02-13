@@ -186,29 +186,4 @@ class Controller:
             logger.error(f"произошла ошибка {e}")
             self.screen.show_popup(f"Ошибка {e}")
             
-    @Slot()
-    def clear_screen_button(self):
-        """Очищает выделение и сбрасывает состояние"""
-        #удаление кнопко
-        print(hasattr(self.screen, 'buffer_button'))
-        if hasattr(self.screen, 'buffer_button'):
-            
-            self.screen.buffer_button.deleteLater()
-        if hasattr(self.screen, 'save_button'):
-           self.screen.save_button.deleteLater()
-        if hasattr(self.screen, 'draw_button'):
-            self.screen.draw_button.deleteLater()   
-        # Скрываем резиновую ленту
-        self.screen.rubber_band.hide()
-        # Сбрасываем переменные состояния
-        self.screen.origin = None
-        self.screen.selected_rect = None
-        self.screen.screen_on = True
-        # Убираем маску окна (если была установлена)
-        self.screen.clearMask()
-        # Сбрасываем геометрию резиновой ленты
-        self.screen.rubber_band.setGeometry(QRect())
-        # Перерисовываем окно
-        self.screen.update()
-        # Возвращаем полностью затемненный экран
-        self.screen.setStyleSheet("background-color: rgba(0, 0, 0, 255);") 
+
