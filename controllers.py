@@ -9,6 +9,7 @@ from PIL import  ImageGrab
 import io
 from datetime import datetime
 import os
+from PySide6.QtCore import Qt, QRect, QSize, QThread, Signal,QSettings ,qDebug, qInfo, qWarning, qCritical
 class HotKey(QThread):
     """Отслеживает горячие клавишы"""
     hot_key_signal = Signal(str)
@@ -57,11 +58,20 @@ class Controller:
         self.th.check_press_hot_key()
         self.load_input()
         self.load_hot_key()
-
-
         #подключить сигналы
         self.connect_signal()
 
+    def load_input(self):
+        try:
+            path = self.model.load_path()
+            self.view.input_text(path)
+        except Exception as e :
+            logger.error(e)
+
+    def click_hot_button(self):
+        self.th.start()
+        self.view.status_label_prepare()
+        
     #подключает сигналы          
     def connect_signal(self):
         self.view.search_signal.connect(self.push_search_button)
@@ -72,10 +82,13 @@ class Controller:
         self.screen.save_buffer_signal.connect(self.click_save_buffer)
         self.screen.draw_signal.connect(self.click_draw_button)
         self.screen.click_save_signal.connect(self.click_save_button)
-    
+
+    @Slot()
     def close_event(self):
         self.view.show_tray()
-    #кнопка обзор    
+    
+    #кнопка обзор  
+    @Slot()  
     def push_search_button(self):
         logger.info("Нажата кнопка путь сохранения")
         try:
@@ -96,26 +109,14 @@ class Controller:
         except Exception as e:
             logger.error(f"Проблемма с кнопкой обзор {e}") 
 
-
-
-    def load_input(self):
-        try:
-            path = self.model.load_path()
-            self.view.input_text(path)
-        except Exception as e :
-            logger.error(e)
-
-    def click_hot_button(self):
-        self.th.start()
-        self.view.status_label_prepare()
-        
     #срабатывает после того как в множесте 2 элемента
     #Обновляет кнопку,лейбл,и сохранеяет 
+    @Slot(str)
     def update_btn_text(self,text):
         self.view.status_label_ready()
         self.view.update_btn(text)
         self.model.save_hot_key(text)
-
+    @Slot()
     def load_hot_key(self):
         try:
             keys = self.model.load_hot_key()
@@ -123,10 +124,12 @@ class Controller:
         except:
             pass  
     #запускает выделение экрана
+    @Slot()
     def run_screen(self):
         self.screen.show()
         self.screen.clear()
-    #Нажатие на скохранить в буффер 
+    #Нажатие на скохранить в буффер
+    @Slot(int, int, int, int) 
     def click_save_buffer(self,x1, y1,x2, y2):
         try:
             logger.info("Нажато сохрнаить в буфере")
@@ -142,7 +145,7 @@ class Controller:
             logger.success("Успешно сохраненно в буфер")                  
             self.screen.exit()
             #playsound('sound\sound.mp3')
-            
+            self.view.message_save_buffer()
         except Exception as e :
             if str(e) == "tile cannot extend outside image":
                 self.screen.exit()
@@ -152,7 +155,7 @@ class Controller:
                 self.screen.exit()
                 self.screen.show_popup(f"{e}")
                 logger.error("Ошибка,не удалось сохранить в буффер")
-
+    @Slot()
     def click_draw_button(self):
         dialog = QColorDialog()
         dialog.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
@@ -169,7 +172,7 @@ class Controller:
             color = dialog.selectedColor()
             if color.isValid():
                 print(f"Выбран цвет: {color.name()}")       
-
+    @Slot(int, int, int, int)
     def click_save_button(self,x1, y1,x2, y2):
         try:
             screenshot = ImageGrab.grab(bbox=(x1, y1,x2, y2))
@@ -183,3 +186,29 @@ class Controller:
             logger.error(f"произошла ошибка {e}")
             self.screen.show_popup(f"Ошибка {e}")
             
+    @Slot()
+    def clear_screen_button(self):
+        """Очищает выделение и сбрасывает состояние"""
+        #удаление кнопко
+        print(hasattr(self.screen, 'buffer_button'))
+        if hasattr(self.screen, 'buffer_button'):
+            
+            self.screen.buffer_button.deleteLater()
+        if hasattr(self.screen, 'save_button'):
+           self.screen.save_button.deleteLater()
+        if hasattr(self.screen, 'draw_button'):
+            self.screen.draw_button.deleteLater()   
+        # Скрываем резиновую ленту
+        self.screen.rubber_band.hide()
+        # Сбрасываем переменные состояния
+        self.screen.origin = None
+        self.screen.selected_rect = None
+        self.screen.screen_on = True
+        # Убираем маску окна (если была установлена)
+        self.screen.clearMask()
+        # Сбрасываем геометрию резиновой ленты
+        self.screen.rubber_band.setGeometry(QRect())
+        # Перерисовываем окно
+        self.screen.update()
+        # Возвращаем полностью затемненный экран
+        self.screen.setStyleSheet("background-color: rgba(0, 0, 0, 255);") 

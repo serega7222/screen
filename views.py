@@ -5,15 +5,105 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QPushButton, QLabel, Q
 from log import *
 from PySide6.QtCore import Qt, QRect, QSize, QThread, Signal,QSettings ,qDebug, qInfo, qWarning, qCritical
 from PySide6.QtGui import QKeySequence, QShortcut,  QAction ,QRegion,QPainter,QImage,QColor,QBrush, QIcon
-
+from PySide6.QtWidgets import (
+    QWidget,
+    QMainWindow,
+    QApplication,
+    QFileDialog,
+    QStyle,
+    QColorDialog,
+)
+from PySide6.QtCore import Qt, Slot, QStandardPaths
+from PySide6.QtGui import (
+    QMouseEvent,
+    QPaintEvent,
+    QPen,
+    QAction,
+    QPainter,
+    QColor,
+    QPixmap,
+    QIcon,
+    QKeySequence,
+)
+import sys
 import win32clipboard
 from PySide6.QtWidgets import QWidget
+
+
+
+class PainterWidget(QWidget):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(680, 480)
+        self.pixmap = QPixmap(self.size())
+        self.pixmap.fill(QColor(0, 0, 0, 1))
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.CustomizeWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground, True)      
+        self.previous_pos = None
+        self.painter = QPainter()
+        self.pen = QPen()
+        self.pen.setColor(QColor("#aa0000"))
+        self.pen.setWidth(10)
+        self.pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        self.pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+
+    def paintEvent(self, event: QPaintEvent):
+        """Override method from QWidget
+
+        Paint the Pixmap into the widget
+
+        """
+        with QPainter(self) as painter:
+            painter.drawPixmap(0, 0, self.pixmap)
+
+    def mousePressEvent(self, event: QMouseEvent):
+        """Override from QWidget
+
+        Called when user clicks on the mouse
+
+        """
+        self.previous_pos = event.position().toPoint()
+        QWidget.mousePressEvent(self, event)
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        """Override method from QWidget
+
+        Called when user moves and clicks on the mouse
+
+        """
+        current_pos = event.position().toPoint()
+        self.painter.begin(self.pixmap)
+        self.painter.setRenderHints(QPainter.RenderHint.Antialiasing, True)
+        self.painter.setPen(self.pen)
+        self.painter.drawLine(self.previous_pos, current_pos)
+        self.painter.end()
+
+        self.previous_pos = current_pos
+        self.update()
+
+        QWidget.mouseMoveEvent(self, event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        """Override method from QWidget
+
+        Called when user releases the mouse
+
+        """
+        self.previous_pos = None
+        QWidget.mouseReleaseEvent(self, event)
+
+
+
 
 class ScreenSelector(QMainWindow):
     """Создает то самое выделение"""
     save_buffer_signal = Signal(int, int, int, int)
     draw_signal = Signal()
     click_save_signal = Signal(int, int, int, int)
+    clear_signal = Signal()
+
+    
     def __init__(self):
         super().__init__()
         # Окно на весь экран, без рамок, поверх остальных
@@ -21,49 +111,26 @@ class ScreenSelector(QMainWindow):
         self.setWindowOpacity(0.6) 
         self.setWindowState(Qt.WindowFullScreen)
         self.setStyleSheet("background-color: rgba(0, 0, 0,255);") 
-        self.rubber_band = QRubberBand(QRubberBand.Rectangle, self)
-        self.origin = None
-        self.screen_on = True
-        
-    def clear(self):
-        """Очищает выделение и сбрасывает состояние"""
-        #удаление кнопко
-        if hasattr(self, 'buffer_button'):
-            self.buffer_button.deleteLater()
-        if hasattr(self, 'save_button'):
-            self.save_button.deleteLater()
-        if hasattr(self, 'draw_button'):
-            self.draw_button.deleteLater()  
-        # Скрываем резиновую ленту
-        self.rubber_band.hide()
-        # Сбрасываем переменные состояния
-        self.origin = None
-        self.selected_rect = None
-        self.screen_on = True
-        # Убираем маску окна (если была установлена)
-        self.clearMask()
-        # Сбрасываем геометрию резиновой ленты
-        self.rubber_band.setGeometry(QRect())
-        # Перерисовываем окно
-        self.update()
-        # Возвращаем полностью затемненный экран
-        self.setStyleSheet("background-color: rgba(0, 0, 0, 255);") 
+        self._rubber_band = QRubberBand(QRubberBand.Rectangle, self)
+        self._origin = None
+        self._screen_on = True
 
     def mousePressEvent(self, event):
-        if self.screen_on:
-            self.origin = event.pos()
-            self.rubber_band.setGeometry(QRect(self.origin, QSize()))
-            self.rubber_band.show()
-            self.screen_on = False
+        if self._screen_on:
+            self._origin = event.pos()
+            self._rubber_band.setGeometry(QRect(self._origin, QSize()))
+            self._rubber_band.show()
+            self._screen_on = False
         else:
-            self.exit()    
+            self.exit()   
+             
     def mouseMoveEvent(self, event):
-        if self.origin:
-            self.rubber_band.setGeometry(QRect(self.origin, event.pos()).normalized())
+        if self._origin:
+            self._rubber_band.setGeometry(QRect(self._origin, event.pos()).normalized())
 
     def mouseReleaseEvent(self, event):
-        self.selected_rect = self.rubber_band.geometry()
-        self.x, self.y, self.width, self.height = self.rubber_band.geometry().getRect()
+        self.selected_rect = self._rubber_band.geometry()
+        self.x, self.y, self.width, self.height = self._rubber_band.geometry().getRect()
         self.x1, self.y1, self.x2, self.y2 = self.x, self.y, self.x + self.width, self.y + self.height
         self.create_selection_hole()
         self.load_screen_ui()
@@ -72,16 +139,22 @@ class ScreenSelector(QMainWindow):
         """Создает 'дырку' в затемненном экране"""
         if not self.selected_rect:
             return
-        #Получаем размер всего экрана
         screen_rect = self.screen().geometry()
-        #Устанавливем регион весь экран
         region = QRegion(screen_rect)
-        #Вычитаем выделеныые 
         region = region.subtracted((self.selected_rect))
-        
-        #Устанавливем 
         self.setMask(region)    
-        
+        #фрейм для рисования
+        width = self.selected_rect.width()
+        height =  self.selected_rect.height()
+        x= self.selected_rect.x()
+        y = self.selected_rect.y()
+        self.painter_widget = PainterWidget()
+        self.painter_widget.setFixedWidth(width)
+        self.painter_widget.setFixedHeight(height)
+        self.painter_widget.move(x,y)
+        self.painter_widget.show()
+
+
     def load_screen_ui(self):
         # Получаем координаты справа от выделенной области
         x = self.selected_rect.x() + self.selected_rect.width()
@@ -111,18 +184,14 @@ class ScreenSelector(QMainWindow):
         layout.addWidget(self.buffer_button)
         layout.addWidget(self.save_button)
         layout.addWidget(self.draw_button)
-        #layout.addStretch()
+        layout.addStretch()
         
         self.tool_container.show()
         
     def exit(self):
-        self.rubber_band.hide()
+        self._rubber_band.hide()
         self.clear()
         self.close() # Закрыть окно после выбора
-
-    def click_save_button(self):
-        self.click_save_signal.emit(self.x1, self.y1, self.x2, self.y2)
-        self.exit()
 
     def show_popup(self, message):
         msg_box = QMessageBox()
@@ -138,8 +207,35 @@ class ScreenSelector(QMainWindow):
     def click_draw_button(self):
         self.draw_signal.emit()
 
+    def click_save_button(self):
+        self.click_save_signal.emit(self.x1, self.y1, self.x2, self.y2)
+        self.exit()
 
-        
+    def clear(self):
+        """Очищает выделение и сбрасывает состояние"""
+        #удаление кнопко
+        if hasattr(self, 'buffer_button'):
+            self.buffer_button.deleteLater()
+        if hasattr(self, 'save_button'):
+            self.save_button.deleteLater()
+        if hasattr(self, 'draw_button'):
+            self.draw_button.deleteLater()  
+        # Скрываем резиновую ленту
+        self._rubber_band.hide()
+        # Сбрасываем переменные состояния
+        self._origin = None
+        self.selected_rect = None
+        self._screen_on = True
+        # Убираем маску окна (если была установлена)
+        self.clearMask()
+        # Сбрасываем геометрию резиновой ленты
+        self._rubber_band.setGeometry(QRect())
+        # Перерисовываем окно
+        self.update()
+        # Возвращаем полностью затемненный экран
+        self.setStyleSheet("background-color: rgba(0, 0, 0, 255);") 
+
+
 class View(QMainWindow):
     search_signal = Signal()
     hot_key_button_signal = Signal()
@@ -147,7 +243,16 @@ class View(QMainWindow):
     def __init__(self):
         super().__init__()
         self.load_ui()
+        self.init_tray()
         
+    def init_tray(self):    
+        if not hasattr(self,"tray_icon"):
+            self.tray_icon = QSystemTrayIcon(self)    
+        self.setWindowTitle("Трей-приложение")
+        self.resize(300, 200)
+        # Используйте свою иконку, например: QIcon("icon.png")
+        self.tray_icon.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_ComputerIcon))                 
+    
     def load_ui(self):
         """Настройка пользовательского интерфейса"""
         self.setMinimumHeight(100)
@@ -217,29 +322,33 @@ class View(QMainWindow):
         
     def show_tray(self):
         #self.icon_tray = QIcon("icon/copy.png")
-        self.setWindowTitle("Трей-приложение")
-        self.resize(300, 200)
 
-        # --- Настройка трея ---
-        self.tray_icon = QSystemTrayIcon(self)
-        # Используйте свою иконку, например: QIcon("icon.png")
-        self.tray_icon.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_ComputerIcon)) 
-        
         # Меню трея
-        tray_menu = QMenu()
-        show_action = QAction("Показать", self)
-        quit_action = QAction("Выход", self)
+        self.tray_menu = QMenu()
+        self.show_action = QAction("Показать", self)
+        self.quit_action = QAction("Выход", self)
         
-        show_action.triggered.connect(self.showNormal)
-        quit_action.triggered.connect(QApplication.instance().quit)
+        self.show_action.triggered.connect(self.showNormal)
+        self.quit_action .triggered.connect(QApplication.instance().quit)
+    
+        self.tray_menu.addAction(self.show_action)
+        self.tray_menu.addAction(self.quit_action )
         
-        tray_menu.addAction(show_action)
-        tray_menu.addAction(quit_action)
-        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.setContextMenu(self.tray_menu)
         self.tray_icon.show()
         self.tray_icon.showMessage(
-            "Приложение свернулось в трей",
-            "Ждя скриншота нажми горячие клавишы",
-            QSystemTrayIcon.MessageIcon.Information,
-            2000
-        )        
+        "Приложение свернулось в трей",
+        "Для скриншота нажми горячие клавишы",
+        QSystemTrayIcon.MessageIcon.Information,
+        2000
+    )       
+
+    def message_save_buffer(self):
+        self.tray_icon.show()
+        self.tray_icon.showMessage(
+        "Успешно",
+        "Сохранено в буфер обмена",
+        QSystemTrayIcon.MessageIcon.Information,
+        2000
+    )       
+        

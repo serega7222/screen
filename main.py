@@ -13,5 +13,5 @@ if __name__ == "__main__":
         app.setStyleSheet(file.read())        
 
     controller = Controller()
-    app.setQuitOnLastWindowClosed(False)
+    #app.setQuitOnLastWindowClosed(False)
     sys.exit(app.exec())
