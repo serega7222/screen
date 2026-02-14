@@ -55,12 +55,24 @@ class Controller:
         self.view = View()
         self.th = HotKey()
         self.screen = ScreenSelector()
+        self.paint = PainterWidget()
         self.th.check_press_hot_key()
         self.load_input()
         self.load_hot_key()
         #подключить сигналы
         self.connect_signal()
-
+    #подключает сигналы          
+    def connect_signal(self):
+        self.view.search_signal.connect(self.push_search_button)
+        self.view.hot_key_button_signal.connect(self.click_hot_button)
+        self.view.close_event_signal.connect(self.close_event)
+        self.th.hot_key_signal.connect(self.update_btn_text)
+        self.th.screen_signal.connect(self.run_screen)
+        self.screen.save_buffer_signal.connect(self.click_save_buffer)
+        self.screen.draw_signal.connect(self.click_draw_button)
+        self.screen.click_save_signal.connect(self.click_save_button)
+        self.screen.paint_signal.connect(self.create_paint)
+        self.screen.exit_signal.connect(self.exit_paint)
     def load_input(self):
         try:
             path = self.model.load_path()
@@ -72,16 +84,6 @@ class Controller:
         self.th.start()
         self.view.status_label_prepare()
         
-    #подключает сигналы          
-    def connect_signal(self):
-        self.view.search_signal.connect(self.push_search_button)
-        self.view.hot_key_button_signal.connect(self.click_hot_button)
-        self.view.close_event_signal.connect(self.close_event)
-        self.th.hot_key_signal.connect(self.update_btn_text)
-        self.th.screen_signal.connect(self.run_screen)
-        self.screen.save_buffer_signal.connect(self.click_save_buffer)
-        self.screen.draw_signal.connect(self.click_draw_button)
-        self.screen.click_save_signal.connect(self.click_save_button)
 
     @Slot()
     def close_event(self):
@@ -143,7 +145,7 @@ class Controller:
             win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
             win32clipboard.CloseClipboard() 
             logger.success("Успешно сохраненно в буфер")                  
-            self.screen.exit()
+            self.screen._exit()
             #playsound('sound\sound.mp3')
             self.view.message_save_buffer()
         except Exception as e :
@@ -171,7 +173,8 @@ class Controller:
         if dialog.exec():
             color = dialog.selectedColor()
             if color.isValid():
-                print(f"Выбран цвет: {color.name()}")       
+                self.color = color.name() 
+                self.paint.change_color(self.color)
     @Slot(int, int, int, int)
     def click_save_button(self,x1, y1,x2, y2):
         try:
@@ -185,5 +188,12 @@ class Controller:
             self.screen.exit()
             logger.error(f"произошла ошибка {e}")
             self.screen.show_popup(f"Ошибка {e}")
-            
-
+    
+    #paint widghet 
+    @Slot(int, int, int, int)        
+    def create_paint(self,width,height,pos_x,pos_y):
+        self.paint.start_paint(width,height,pos_x,pos_y)
+    
+    @Slot()
+    def exit_paint(self):
+        self.paint.close()

@@ -33,9 +33,13 @@ from PySide6.QtWidgets import QWidget
 
 class PainterWidget(QWidget):
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFixedSize(680, 480)
+    def __init__(self,):
+        super().__init__()
+
+
+    def _create(self,width,height,pos_x,pos_y):
+        self.setFixedSize(width, height)
+        self.move(pos_x,pos_y)
         self.pixmap = QPixmap(self.size())
         self.pixmap.fill(QColor(0, 0, 0, 1))
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.CustomizeWindowHint)
@@ -47,6 +51,10 @@ class PainterWidget(QWidget):
         self.pen.setWidth(10)
         self.pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         self.pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        self.show()
+
+    def change_color(self,color):
+        self.pen.setColor(QColor(color))
 
     def paintEvent(self, event: QPaintEvent):
         """Override method from QWidget
@@ -78,7 +86,6 @@ class PainterWidget(QWidget):
         self.painter.setPen(self.pen)
         self.painter.drawLine(self.previous_pos, current_pos)
         self.painter.end()
-
         self.previous_pos = current_pos
         self.update()
 
@@ -93,8 +100,8 @@ class PainterWidget(QWidget):
         self.previous_pos = None
         QWidget.mouseReleaseEvent(self, event)
 
-
-
+    def start_paint(self,width,height,pos_x,pos_y):
+        self._create(width,height,pos_x,pos_y)
 
 class ScreenSelector(QMainWindow):
     """Создает то самое выделение"""
@@ -102,8 +109,8 @@ class ScreenSelector(QMainWindow):
     draw_signal = Signal()
     click_save_signal = Signal(int, int, int, int)
     clear_signal = Signal()
-
-    
+    paint_signal = Signal(int, int, int, int)
+    exit_signal = Signal()
     def __init__(self):
         super().__init__()
         # Окно на весь экран, без рамок, поверх остальных
@@ -122,7 +129,7 @@ class ScreenSelector(QMainWindow):
             self._rubber_band.show()
             self._screen_on = False
         else:
-            self.exit()   
+            self._exit()   
              
     def mouseMoveEvent(self, event):
         if self._origin:
@@ -142,17 +149,16 @@ class ScreenSelector(QMainWindow):
         screen_rect = self.screen().geometry()
         region = QRegion(screen_rect)
         region = region.subtracted((self.selected_rect))
-        self.setMask(region)    
-        #фрейм для рисования
-        width = self.selected_rect.width()
-        height =  self.selected_rect.height()
-        x= self.selected_rect.x()
-        y = self.selected_rect.y()
-        self.painter_widget = PainterWidget()
-        self.painter_widget.setFixedWidth(width)
-        self.painter_widget.setFixedHeight(height)
-        self.painter_widget.move(x,y)
-        self.painter_widget.show()
+        self.setMask(region) 
+        self.create_paint()
+
+    def create_paint(self):
+        self.width_paint = self.selected_rect.width()
+        self.height_paint =  self.selected_rect.height()
+        
+        self.x_paint= self.selected_rect.x()
+        self.y_paint = self.selected_rect.y()        
+        self.paint_signal.emit(self.width_paint,self.height_paint,self.x_paint,self.y_paint)
 
 
     def load_screen_ui(self):
@@ -188,29 +194,20 @@ class ScreenSelector(QMainWindow):
         
         self.tool_container.show()
         
-    def exit(self):
+    def _exit(self):
         self._rubber_band.hide()
         self.clear()
         self.close() # Закрыть окно после выбора
-
+        #self.painter_widget.close()
+        
+        #Закрытие paint
+        self.exit_signal.emit()
     def show_popup(self, message):
         msg_box = QMessageBox()
         msg_box.setWindowTitle("Ошибка")
         msg_box.setIcon(QMessageBox.Information)
         msg_box.setText(message)
         msg_box.exec()        
-
-    #сигналы    
-    def click_save_buffer(self):
-        self.save_buffer_signal.emit(self.x1, self.y1, self.x2, self.y2)
-
-    def click_draw_button(self):
-        self.draw_signal.emit()
-
-    def click_save_button(self):
-        self.click_save_signal.emit(self.x1, self.y1, self.x2, self.y2)
-        self.exit()
-
     def clear(self):
         """Очищает выделение и сбрасывает состояние"""
         #удаление кнопко
@@ -234,6 +231,18 @@ class ScreenSelector(QMainWindow):
         self.update()
         # Возвращаем полностью затемненный экран
         self.setStyleSheet("background-color: rgba(0, 0, 0, 255);") 
+    #сигналы    
+    def click_save_buffer(self):
+        self.save_buffer_signal.emit(self.x1, self.y1, self.x2, self.y2)
+        
+    def click_draw_button(self):
+        self.draw_signal.emit()
+
+    def click_save_button(self):
+        self.click_save_signal.emit(self.x1, self.y1, self.x2, self.y2)
+        self._exit()
+
+
 
 
 class View(QMainWindow):
