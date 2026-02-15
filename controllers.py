@@ -73,6 +73,8 @@ class Controller:
         self.screen.click_save_signal.connect(self.click_save_button)
         self.screen.paint_signal.connect(self.create_paint)
         self.screen.exit_signal.connect(self.exit_paint)
+        self.screen.clear_paint_signal.connect(self.clear_paint)
+        self.screen.slider_update_signal.connect(self.set_brush_size)
     def load_input(self):
         try:
             path = self.model.load_path()
@@ -175,6 +177,7 @@ class Controller:
             if color.isValid():
                 self.color = color.name() 
                 self.paint.change_color(self.color)
+    
     @Slot(int, int, int, int)
     def click_save_button(self,x1, y1,x2, y2):
         try:
@@ -197,3 +200,9 @@ class Controller:
     @Slot()
     def exit_paint(self):
         self.paint.close()
+    @Slot()
+    def clear_paint(self):
+        self.paint.clear_paint()  
+    @Slot(int)
+    def set_brush_size(self,size):
+        self.paint.set_size(size)

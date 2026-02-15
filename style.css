@@ -59,3 +59,24 @@ QCheckBox#draw_button::indicator {
 QCheckBox#draw_button::indicator:hover {
     background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
 }
+
+
+/* Кнопка корзина*/
+QCheckBox#clear::indicator {
+    width: 40px;   /* Ширина индикатора */
+    height: 40px;  /* Высота индикатора */
+    
+    border-radius: 5px;
+    background-color: rgb(255, 255, 255);
+}
+
+QCheckBox#clear::indicator {
+  background-image: url(icon/trash.png); 
+  width: 40px; 
+  height: 40px; 
+}
+
+/* При наведении изменяем фон индикатора */
+QCheckBox#clear::indicator:hover {
+    background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
+}

@@ -1,7 +1,7 @@
 #views.py
 from PySide6.QtWidgets import (QApplication, QMainWindow, QPushButton, QLabel, QLineEdit,
                                 QFileDialog, QSystemTrayIcon, QMenu,QCheckBox,QComboBox,
-                                QMessageBox,QRubberBand,QColorDialog,QGridLayout,QVBoxLayout)
+                                QMessageBox,QRubberBand,QColorDialog,QGridLayout,QVBoxLayout,QSlider)
 from log import *
 from PySide6.QtCore import Qt, QRect, QSize, QThread, Signal,QSettings ,qDebug, qInfo, qWarning, qCritical
 from PySide6.QtGui import QKeySequence, QShortcut,  QAction ,QRegion,QPainter,QImage,QColor,QBrush, QIcon
@@ -56,6 +56,13 @@ class PainterWidget(QWidget):
     def change_color(self,color):
         self.pen.setColor(QColor(color))
 
+    def clear_paint(self):
+        self.pixmap.fill(QColor(0, 0, 0, 1))
+        self.update()
+
+    def set_size(self,size):
+        self.pen.setWidth(size)
+
     def paintEvent(self, event: QPaintEvent):
         """Override method from QWidget
 
@@ -104,13 +111,15 @@ class PainterWidget(QWidget):
         self._create(width,height,pos_x,pos_y)
 
 class ScreenSelector(QMainWindow):
-    """Создает то самое выделение"""
+    """Создает выделение"""
     save_buffer_signal = Signal(int, int, int, int)
     draw_signal = Signal()
     click_save_signal = Signal(int, int, int, int)
     clear_signal = Signal()
     paint_signal = Signal(int, int, int, int)
     exit_signal = Signal()
+    clear_paint_signal = Signal()
+    slider_update_signal = Signal(int)
     def __init__(self):
         super().__init__()
         # Окно на весь экран, без рамок, поверх остальных
@@ -139,10 +148,10 @@ class ScreenSelector(QMainWindow):
         self.selected_rect = self._rubber_band.geometry()
         self.x, self.y, self.width, self.height = self._rubber_band.geometry().getRect()
         self.x1, self.y1, self.x2, self.y2 = self.x, self.y, self.x + self.width, self.y + self.height
-        self.create_selection_hole()
-        self.load_screen_ui()
+        self._create_selection_hole()
+        self._load_screen_ui()
         
-    def create_selection_hole(self):
+    def _create_selection_hole(self):
         """Создает 'дырку' в затемненном экране"""
         if not self.selected_rect:
             return
@@ -150,9 +159,9 @@ class ScreenSelector(QMainWindow):
         region = QRegion(screen_rect)
         region = region.subtracted((self.selected_rect))
         self.setMask(region) 
-        self.create_paint()
+        self._create_paint()
 
-    def create_paint(self):
+    def _create_paint(self):
         self.width_paint = self.selected_rect.width()
         self.height_paint =  self.selected_rect.height()
         
@@ -161,14 +170,14 @@ class ScreenSelector(QMainWindow):
         self.paint_signal.emit(self.width_paint,self.height_paint,self.x_paint,self.y_paint)
 
 
-    def load_screen_ui(self):
+    def _load_screen_ui(self):
         # Получаем координаты справа от выделенной области
         x = self.selected_rect.x() + self.selected_rect.width()
         y = self.selected_rect.y()
         
         # Создаем контейнер для виджетов
         self.tool_container = QWidget(self)
-        self.tool_container.setGeometry(x, y, 150, 200)  # x, y, width, height
+        self.tool_container.setGeometry(x, y, 150, 300)  # x, y, width, height
         
         # Создаем layout для контейнера
         layout = QVBoxLayout(self.tool_container)
@@ -186,10 +195,20 @@ class ScreenSelector(QMainWindow):
         self.draw_button.clicked.connect(self.click_draw_button)
         self.draw_button.setObjectName("draw_button")
         
+        self._clear_button = QCheckBox("clear", self.tool_container) 
+        self._clear_button .clicked.connect(self.click_clear_paint_button)
+        self._clear_button .setObjectName("clear")
+
+        self._slider = QSlider(Qt.Vertical)
+        self._slider.setRange(0, 100) # Диапазон от 0 до 100
+        self._slider.setValue(10)     # Начальное значение
+        self._slider.valueChanged.connect(self._slider_update)
         # Добавляем в layout
         layout.addWidget(self.buffer_button)
         layout.addWidget(self.save_button)
         layout.addWidget(self.draw_button)
+        layout.addWidget(self._clear_button )
+        layout.addWidget(self._slider)
         layout.addStretch()
         
         self.tool_container.show()
@@ -208,6 +227,7 @@ class ScreenSelector(QMainWindow):
         msg_box.setIcon(QMessageBox.Information)
         msg_box.setText(message)
         msg_box.exec()        
+    
     def clear(self):
         """Очищает выделение и сбрасывает состояние"""
         #удаление кнопко
@@ -217,6 +237,11 @@ class ScreenSelector(QMainWindow):
             self.save_button.deleteLater()
         if hasattr(self, 'draw_button'):
             self.draw_button.deleteLater()  
+        if hasattr(self, '_clear_button'):
+            self._clear_button .deleteLater()  
+        if hasattr(self, '_slider'):
+            self._slider .deleteLater()              
+                      
         # Скрываем резиновую ленту
         self._rubber_band.hide()
         # Сбрасываем переменные состояния
@@ -242,7 +267,11 @@ class ScreenSelector(QMainWindow):
         self.click_save_signal.emit(self.x1, self.y1, self.x2, self.y2)
         self._exit()
 
+    def click_clear_paint_button(self):
+        self.clear_paint_signal.emit()
 
+    def _slider_update(self,value):
+        self.slider_update_signal.emit(value)
 
 
 class View(QMainWindow):
