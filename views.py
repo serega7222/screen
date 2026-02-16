@@ -1,7 +1,7 @@
 #views.py
 from PySide6.QtWidgets import (QApplication, QMainWindow, QPushButton, QLabel, QLineEdit,
                                 QFileDialog, QSystemTrayIcon, QMenu,QCheckBox,QComboBox,
-                                QMessageBox,QRubberBand,QColorDialog,QGridLayout,QVBoxLayout,QSlider)
+                                QMessageBox,QRubberBand,QColorDialog,QGridLayout,QVBoxLayout,QSlider,QHBoxLayout)
 from log import *
 from PySide6.QtCore import Qt, QRect, QSize, QThread, Signal,QSettings ,qDebug, qInfo, qWarning, qCritical
 from PySide6.QtGui import QKeySequence, QShortcut,  QAction ,QRegion,QPainter,QImage,QColor,QBrush, QIcon
@@ -29,6 +29,27 @@ import sys
 import win32clipboard
 from PySide6.QtWidgets import QWidget
 
+class MoveWidget(QCheckBox):
+    def __init__(self, container_to_move, parent=None):
+        super().__init__(parent)
+        self.container_to_move = container_to_move  # Сохраняем ссылку на контейнер
+        self.drag_position = None
+    
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            # Используем позицию контейнера, а не самого виджета
+            self.drag_position = event.globalPosition().toPoint() - self.container_to_move.pos()
+            print("Нажатие кнопки")
+        
+    def mouseReleaseEvent(self, event):
+        self.drag_position = None
+        print("Отпускание кнопки")
+        
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.LeftButton and self.drag_position is not None:
+            new_pos = event.globalPosition().toPoint() - self.drag_position
+            self.container_to_move.move(new_pos)  # Перемещаем контейнер
+            print(f"Перемещение контейнера в: {new_pos.x()}, {new_pos.y()}")
 
 
 class PainterWidget(QWidget):
@@ -174,15 +195,25 @@ class ScreenSelector(QMainWindow):
         # Получаем координаты справа от выделенной области
         x = self.selected_rect.x() + self.selected_rect.width()
         y = self.selected_rect.y()
-        
-        # Создаем контейнер для виджетов
-        self.tool_container = QWidget(self)
-        self.tool_container.setGeometry(x, y, 150, 300)  # x, y, width, height
-        
+   
+        # Создаем контейнер как отдельное окно (без родителя)
+        self.tool_container = QWidget()  # Убираем self из параметров!
+        self.tool_container.setWindowFlags(
+            Qt.FramelessWindowHint |  # Без рамки
+            Qt.WindowStaysOnTopHint |  # Поверх всех окон
+            Qt.Tool | # Не показывается в панели задач
+            Qt.WindowDoesNotAcceptFocus
+        )
+        self.tool_container.setAttribute(Qt.WA_TranslucentBackground)  # Прозрачный фон
+            
         # Создаем layout для контейнера
         layout = QVBoxLayout(self.tool_container)
         
         # Создаем кнопки с родителем tool_container
+        self._move_button = MoveWidget(self.tool_container,self.tool_container)
+        self._move_button.setObjectName("move_button")
+        self._move_button.clicked.connect(self.click_move_button)        
+
         self.buffer_button = QCheckBox("Buffer", self.tool_container)
         self.buffer_button.setObjectName("buffer_button")
         self.buffer_button.clicked.connect(self.click_save_buffer)
@@ -204,11 +235,13 @@ class ScreenSelector(QMainWindow):
         self._slider.setValue(10)     # Начальное значение
         self._slider.valueChanged.connect(self._slider_update)
         # Добавляем в layout
+        layout.addWidget(self._move_button)
         layout.addWidget(self.buffer_button)
         layout.addWidget(self.save_button)
         layout.addWidget(self.draw_button)
         layout.addWidget(self._clear_button )
         layout.addWidget(self._slider)
+        
         layout.addStretch()
         
         self.tool_container.show()
@@ -231,17 +264,17 @@ class ScreenSelector(QMainWindow):
     def clear(self):
         """Очищает выделение и сбрасывает состояние"""
         #удаление кнопко
-        if hasattr(self, 'buffer_button'):
-            self.buffer_button.deleteLater()
-        if hasattr(self, 'save_button'):
-            self.save_button.deleteLater()
-        if hasattr(self, 'draw_button'):
-            self.draw_button.deleteLater()  
-        if hasattr(self, '_clear_button'):
-            self._clear_button .deleteLater()  
-        if hasattr(self, '_slider'):
-            self._slider .deleteLater()              
-                      
+        button = ['buffer_button','save_button',
+                  'draw_button','_clear_button',
+                  '_slider','_move_button']
+        
+        # Удаляем через цикл
+        for name in button:
+            if hasattr(self, name):
+                getattr(self, name).deleteLater()
+                delattr(self, name)  # Опционально: удаляем атрибут       
+
+
         # Скрываем резиновую ленту
         self._rubber_band.hide()
         # Сбрасываем переменные состояния
@@ -272,7 +305,9 @@ class ScreenSelector(QMainWindow):
 
     def _slider_update(self,value):
         self.slider_update_signal.emit(value)
-
+        
+    def click_move_button(self):
+        self.tool_container.move(1,1)
 
 class View(QMainWindow):
     search_signal = Signal()

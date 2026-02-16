@@ -130,6 +130,7 @@ class Controller:
     #запускает выделение экрана
     @Slot()
     def run_screen(self):
+        logger.info("Запуск облости захвата")
         self.screen.show()
         self.screen.clear()
     #Нажатие на скохранить в буффер
@@ -161,23 +162,29 @@ class Controller:
                 logger.error("Ошибка,не удалось сохранить в буффер")
     @Slot()
     def click_draw_button(self):
-        dialog = QColorDialog()
-        dialog.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
-        dialog.setStyleSheet("""
-            QColorDialog, QWidget {
-                background-color: white;
-                color: black;
-            }
-        """)
-        
-        dialog.setCurrentColor(QColor(Qt.black))
-        
-        if dialog.exec():
-            color = dialog.selectedColor()
-            if color.isValid():
-                self.color = color.name() 
-                self.paint.change_color(self.color)
-    
+        try:
+            dialog = QColorDialog()
+            dialog.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
+            dialog.setStyleSheet("""
+                QColorDialog, QWidget {
+                    background-color: white;
+                    color: black;
+                }
+            """)
+            logger.info("Открыто окно выбора цвета")
+            dialog.setCurrentColor(QColor(Qt.black))
+            
+            if dialog.exec():
+                color = dialog.selectedColor()
+                if color.isValid():
+                    self.color = color.name() 
+                    self.paint.change_color(self.color)
+                    logger.success(f"Выбран цвет {self.color}")
+            else:
+                logger.info("Пользователь отменил выбор цвета")        
+        except Exception as e:
+            logger.error(f"Не получилось выбрать цвет {e}")
+            self.screen.show_popup(f"Ошибка {e}")
     @Slot(int, int, int, int)
     def click_save_button(self,x1, y1,x2, y2):
         try:

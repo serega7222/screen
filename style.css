@@ -80,3 +80,24 @@ QCheckBox#clear::indicator {
 QCheckBox#clear::indicator:hover {
     background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
 }
+
+
+/* Кнопка движения */
+QCheckBox#move_button::indicator {
+    width: 40px;   /* Ширина индикатора */
+    height: 40px;  /* Высота индикатора */
+    
+    border-radius: 5px;
+    background-color: rgb(255, 255, 255);
+}
+
+QCheckBox#move_button::indicator {
+  background-image: url(icon/arrows-out-cardinal.png); 
+  width: 40px; 
+  height: 40px; 
+}
+
+/* При наведении изменяем фон индикатора */
+QCheckBox#move_button::indicator:hover {
+    background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
+}
