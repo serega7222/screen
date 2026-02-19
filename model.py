@@ -18,7 +18,7 @@ config = AppConfig()
 
 
 
-class Model:
+class Model():
     """Отвечает за загрузку сохранение данных"""
     def __init__(self)-> None: 
         self.settings = QSettings("MyApp", "Screenshotter")

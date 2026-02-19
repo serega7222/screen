@@ -2,8 +2,8 @@
 from log import logger
 from PySide6.QtWidgets import QFileDialog ,QColorDialog                        
 from model import *
-from views import *
-from PySide6.QtCore import  QThread, Signal
+from PySide6.QtCore import  QThread, Signal 
+from PySide6.QtGui import QColor
 import keyboard
 from keyboard import KeyboardEvent
 from PIL import  ImageGrab
@@ -12,6 +12,9 @@ from datetime import datetime
 import os
 from PySide6.QtCore import Qt,  QThread, Signal,Slot
 import win32clipboard
+from view.main_screen import MainScreen
+from view.selector_screen import ScreenSelector
+from view.paint_screen import PainterWidget
 
 class HotKey(QThread):
     """Отслеживает горячие клавишы"""
@@ -56,7 +59,7 @@ class HotKey(QThread):
 class Controller:
     def __init__(self)-> None:
         self.model = Model()
-        self.view = View()
+        self.main_screen = MainScreen()
         self.th = HotKey()
         self.screen = ScreenSelector()
         self.paint = PainterWidget()
@@ -68,9 +71,9 @@ class Controller:
 
     #подключает сигналы          
     def connect_signal(self)-> None:
-        self.view.search_signal.connect(self.push_search_button)
-        self.view.hot_key_button_signal.connect(self.click_hot_button)
-        self.view.close_event_signal.connect(self.close_event)
+        self.main_screen.search_signal.connect(self.push_search_button)
+        self.main_screen.hot_key_button_signal.connect(self.click_hot_button)
+        self.main_screen.close_event_signal.connect(self.close_event)
         self.th.hot_key_signal.connect(self.update_btn_text)
         self.th.screen_signal.connect(self.run_screen)
         self.screen.save_buffer_signal.connect(self.click_save_buffer)
@@ -84,18 +87,18 @@ class Controller:
     def load_input(self)-> None:
         try:
             path = self.model.load_path()
-            self.view.input_text(path) # type: ignore
+            self.main_screen.input_text(path) # type: ignore
         except Exception as e :
             logger.error(e)
 
     def click_hot_button(self)-> None:
         self.th.start()
-        self.view.status_label_prepare()
+        self.main_screen.status_label_prepare()
         
 
     @Slot()
     def close_event(self)-> None:
-        self.view.show_tray()
+        self.main_screen.show_tray()
     
     #кнопка обзор  
     @Slot()  
@@ -104,14 +107,14 @@ class Controller:
         try:
             logger.info("Открыто окно выбора папки")
             self.folder = QFileDialog.getExistingDirectory(
-                self.view,  # родительское окно
+                self.main_screen,  # родительское окно
                 "Выберите папку",  # заголовок
                 "",  # начальная директория
                 QFileDialog.Option.ShowDirsOnly  # опции
             )  
             if self.folder:
                 self.model.save_path(self.folder)
-                self.view.input_text(self.folder)
+                self.main_screen.input_text(self.folder)
                 logger.success("Папка выбрана путь сохранен в HKEY_CURRENT_USER\SOFTWARE\MyApp")
 
             else:
@@ -123,15 +126,15 @@ class Controller:
     #Обновляет кнопку,лейбл,и сохранеяет 
     @Slot(str)
     def update_btn_text(self,text:str)-> None:
-        self.view.status_label_ready()
-        self.view.update_btn(text)
+        self.main_screen.status_label_ready()
+        self.main_screen.update_btn(text)
         self.model.save_hot_key(text)
 
     @Slot()
     def load_hot_key(self)-> None:
         try:
             keys = self.model.load_hot_key()
-            self.view.load_hot_key(keys)
+            self.main_screen.load_hot_key(keys)
         except:
             pass  
     #запускает выделение экрана
@@ -157,7 +160,7 @@ class Controller:
             logger.success("Успешно сохраненно в буфер")                  
             self.screen._exit()
             #playsound('sound\sound.mp3')
-            self.view.message_save_buffer()
+            self.main_screen.message_save_buffer()
         except Exception as e :
             if str(e) == "tile cannot extend outside image":
                 self.screen.exit()
@@ -200,7 +203,7 @@ class Controller:
         try:
             screenshot = ImageGrab.grab(bbox=(x1, y1,x2, y2))
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            save_folder = self.view.return_input_text()
+            save_folder = self.main_screen.return_input_text()
             filename = f"screenshot_{timestamp}.png"
             save_path = os.path.join(save_folder, filename)
             screenshot.save(save_path, "PNG")
