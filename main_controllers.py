@@ -1,11 +1,8 @@
-#controllers.py
+#main_controllers.py
 from log import logger
 from PySide6.QtWidgets import QFileDialog ,QColorDialog                        
 from model import *
-from PySide6.QtCore import  QThread, Signal 
 from PySide6.QtGui import QColor
-import keyboard
-from keyboard import KeyboardEvent
 from PIL import  ImageGrab
 import io
 from datetime import datetime
@@ -15,52 +12,16 @@ import win32clipboard
 from view.main_screen import MainScreen
 from view.selector_screen import ScreenSelector
 from view.paint_screen import PainterWidget
-
-class HotKey(QThread):
-    """Отслеживает горячие клавишы"""
-    hot_key_signal = Signal(str)
-    screen_signal = Signal()
-    def __init__(self)-> None:
-        super().__init__()
-        self.lst_hot_key = set()
-        
-    def run(self)-> None:
-        self.flag = True
-        keyboard.on_press(self.key_pressed)
-        logger.info("Отслеживание нажатий")
-        while self.flag:
-            self.msleep(100)  # Не грузит CPU
-
-    def check_press_hot_key(self)-> None:
-        keyboard.add_hotkey('ctrl+shift', self.trigger_hotkey)
-
-    def trigger_hotkey(self)-> None: 
-        logger.info("Нажаты горячие клавишы")
-        self.screen_signal.emit()
-
-    def key_pressed(self,event:KeyboardEvent)-> None:
-        
-        if self.flag:
-            self.lst_hot_key.add(event.name)
-            if len(self.lst_hot_key) == 2 :
-                text = "+".join(self.lst_hot_key)
-                self.hot_key_signal.emit(text)
-                self.lst_hot_key.clear()
-                self.pause()
-            
-    def pause(self)-> None:
-        self.flag = False
-
-    def stop(self)-> None:
-        keyboard.unhook_all()
-        super().quit() 
+from controllers.hot_key  import HotKey 
+from controllers.main_screen_controller import MainScreenController
 
 
-class Controller:
+class MainController:
     def __init__(self)-> None:
         self.model = Model()
         self.main_screen = MainScreen()
         self.th = HotKey()
+        self.main_screen_controller = MainScreenController(self.main_screen,self.th,self.model  )
         self.screen = ScreenSelector()
         self.paint = PainterWidget()
         self.th.check_press_hot_key()
@@ -68,12 +29,9 @@ class Controller:
         self.load_hot_key()
         #подключить сигналы
         self.connect_signal()
-
+        
     #подключает сигналы          
     def connect_signal(self)-> None:
-        self.main_screen.search_signal.connect(self.push_search_button)
-        self.main_screen.hot_key_button_signal.connect(self.click_hot_button)
-        self.main_screen.close_event_signal.connect(self.close_event)
         self.th.hot_key_signal.connect(self.update_btn_text)
         self.th.screen_signal.connect(self.run_screen)
         self.screen.save_buffer_signal.connect(self.click_save_buffer)
@@ -84,6 +42,7 @@ class Controller:
         self.screen.clear_paint_signal.connect(self.clear_paint)
         self.screen.slider_update_signal.connect(self.set_brush_size)
         self.paint.size_pen_signal.connect(self.load_paint_setting)
+        
     def load_input(self)-> None:
         try:
             path = self.model.load_path()
@@ -91,36 +50,7 @@ class Controller:
         except Exception as e :
             logger.error(e)
 
-    def click_hot_button(self)-> None:
-        self.th.start()
-        self.main_screen.status_label_prepare()
-        
 
-    @Slot()
-    def close_event(self)-> None:
-        self.main_screen.show_tray()
-    
-    #кнопка обзор  
-    @Slot()  
-    def push_search_button(self)-> None:
-        logger.info("Нажата кнопка путь сохранения")
-        try:
-            logger.info("Открыто окно выбора папки")
-            self.folder = QFileDialog.getExistingDirectory(
-                self.main_screen,  # родительское окно
-                "Выберите папку",  # заголовок
-                "",  # начальная директория
-                QFileDialog.Option.ShowDirsOnly  # опции
-            )  
-            if self.folder:
-                self.model.save_path(self.folder)
-                self.main_screen.input_text(self.folder)
-                logger.success("Папка выбрана путь сохранен в HKEY_CURRENT_USER\SOFTWARE\MyApp")
-
-            else:
-                logger.info("Папка отменина")
-        except Exception as e:
-            logger.error(f"Проблемма с кнопкой обзор {e}") 
 
     #срабатывает после того как в множесте 2 элемента
     #Обновляет кнопку,лейбл,и сохранеяет 
