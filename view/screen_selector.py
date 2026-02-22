@@ -3,41 +3,19 @@ from PySide6.QtCore import Qt, QRect, QSize, Signal
 from PySide6.QtWidgets import QMainWindow,QCheckBox,QMessageBox,QRubberBand,QVBoxLayout,QSlider
 from PySide6.QtGui import QRegion,QMouseEvent
 from PySide6.QtWidgets import QWidget,QMainWindow
-
-class MoveWidget(QCheckBox):
-    """Создает виджет который можно двигать ,в нашел случае чекбокс"""
-    def __init__(self, container_to_move :QWidget, parent=None) -> None:
-        super().__init__(parent)
-        self.container_to_move = container_to_move  # Сохраняем ссылку на контейнер
-        self.drag_position = None
-    
-    def mousePressEvent(self, event:QMouseEvent) -> None:
-        if event.button() == Qt.LeftButton:
-            # Используем позицию контейнера, а не самого виджета
-            self.drag_position = event.globalPosition().toPoint() - self.container_to_move.pos()
-           
-        
-    def mouseReleaseEvent(self, event:QMouseEvent) -> None:
-        self.drag_position = None
-        
-        
-    def mouseMoveEvent(self, event:QMouseEvent) -> None:
-        if event.buttons() == Qt.LeftButton and self.drag_position is not None:
-            new_pos = event.globalPosition().toPoint() - self.drag_position
-            self.container_to_move.move(new_pos)  # Перемещаем контейнер
-            print(f"Перемещение контейнера в: {new_pos.x()}, {new_pos.y()}")
+from model.model import Model
+from .move_widget import MoveWidget
+from view.paint import PainterWidget
+from utils.log import logger
 
 class ScreenSelector(QMainWindow):
     """Создает выделение"""
     save_buffer_signal = Signal(int, int, int, int)
-    draw_signal = Signal()
-    click_save_signal = Signal(int, int, int, int)
-    clear_signal = Signal()
-    paint_signal = Signal(int, int, int, int)
-    exit_signal = Signal()
-    clear_paint_signal = Signal()
-    slider_update_signal = Signal(int)
-    def __init__(self) -> None:
+    save_local_signal = Signal(int, int, int, int)
+    choose_pen_signal = Signal()
+    choose_marker_signal = Signal()
+    choose_clean_signal = Signal()
+    def __init__(self,paint:PainterWidget,model:Model) -> None:
         super().__init__()
         # Окно на весь экран, без рамок, поверх остальных
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.CustomizeWindowHint)
@@ -48,6 +26,8 @@ class ScreenSelector(QMainWindow):
         self._origin = None
         self._screen_on = True
         self.step = None
+        self.paint = paint
+        self.model = model
     def mousePressEvent(self, event : QMouseEvent)-> None:
         if self._screen_on:
             self._origin = event.pos()
@@ -56,6 +36,7 @@ class ScreenSelector(QMainWindow):
             self._screen_on = False
         else:
             self._exit()   
+            
     def mouseMoveEvent(self, event:QMouseEvent)-> None:
         if self._origin:
             self._rubber_band.setGeometry(QRect(self._origin, event.pos()).normalized())
@@ -84,7 +65,7 @@ class ScreenSelector(QMainWindow):
         
         self.x_paint= self.selected_rect.x()
         self.y_paint = self.selected_rect.y()        
-        self.paint_signal.emit(self.width_paint,self.height_paint,self.x_paint,self.y_paint)
+        self.paint.create_ui(self.width_paint,self.height_paint,self.x_paint,self.y_paint)
 
 
     def _load_screen_ui(self)-> None:
@@ -92,7 +73,7 @@ class ScreenSelector(QMainWindow):
         # Получаем координаты справа от выделенной области
         x = self.selected_rect.x() + self.selected_rect.width()
         y = self.selected_rect.y()
-   
+        
         # Создаем контейнер как отдельное окно (без родителя)
         self.tool_container = QWidget()  # Убираем self из параметров!
         self.tool_container.setWindowFlags(
@@ -111,70 +92,63 @@ class ScreenSelector(QMainWindow):
         self._move_button.setObjectName("move_button")
                
 
-        self.buffer_button = QCheckBox("Buffer", self.tool_container)
-        self.buffer_button.setObjectName("buffer_button")
-        self.buffer_button.clicked.connect(self.click_save_buffer)
+        self._buffer_button = QCheckBox("Buffer", self.tool_container)
+        self._buffer_button.setObjectName("buffer_button")
+        self._buffer_button.clicked.connect(self._click_save_buffer)
         
-        self.save_button = QCheckBox("Save", self.tool_container) 
-        self.save_button.clicked.connect(self.click_save_button)
-        self.save_button.setObjectName("save_button")
+        self._save_button = QCheckBox("Save", self.tool_container) 
+        self._save_button.clicked.connect(self._click_save_local)
+        self._save_button.setObjectName("save_button")
         
-        self.draw_button = QCheckBox("Draw", self.tool_container) 
-        self.draw_button.clicked.connect(self.click_draw_button)
-        self.draw_button.setObjectName("draw_button")
-        
+        self._pen_button = QCheckBox("Pen", self.tool_container) 
+        self._pen_button.clicked.connect(self._click_pen_button)
+        self._pen_button.setObjectName("Pen_button")
+
+        self._marker_button = QCheckBox("marker", self.tool_container) 
+        self._marker_button.clicked.connect(self._click_marker_button)
+        self._marker_button.setObjectName("marker_button")
+
         self._clear_button = QCheckBox("clear", self.tool_container) 
-        self._clear_button .clicked.connect(self.click_clear_paint_button)
+        self._clear_button .clicked.connect(self._click_clear_button)
         self._clear_button .setObjectName("clear")
 
         self._slider = QSlider(Qt.Vertical)
+        self._load_step()
         self._slider.setRange(0, 100) # Диапазон от 0 до 100
         self._slider.setValue(self.step)     # Начальное значение
         self._slider.valueChanged.connect(self._slider_update)
         # Добавляем в layout
         layout.addWidget(self._move_button)
-        layout.addWidget(self.buffer_button)
-        layout.addWidget(self.save_button)
-        layout.addWidget(self.draw_button)
+        layout.addWidget(self._buffer_button)
+        layout.addWidget(self._save_button)
+        layout.addWidget(self._pen_button)
+        layout.addWidget(self._marker_button)
         layout.addWidget(self._clear_button )
         layout.addWidget(self._slider)
         
         layout.addStretch()
-        
+        self.set_pen_button_color()
+        self.set_marker_button_color()
         self.tool_container.show()
-
-    def load_step(self,value:int):
-        self.step = value
 
     def _exit(self)-> None:
         self._rubber_band.hide()
-        self.clear()
+        self._clear()
         self.close() # Закрыть окно после выбора
-        #self.painter_widget.close()
-        
-        #Закрытие paint
-        self.exit_signal.emit()
-
-    def show_popup(self, message:str)-> None:
-        msg_box = QMessageBox()
-        msg_box.setWindowTitle("Ошибка")
-        msg_box.setIcon(QMessageBox.Information)
-        msg_box.setText(message)
-        msg_box.exec()        
+        self.paint.close_paint()
     
-    def clear(self)-> None:
+    def _clear(self)-> None:
         """Очищает выделение и сбрасывает состояние"""
         #удаление кнопко
-        button = ['buffer_button','save_button',
-                  'draw_button','_clear_button',
-                  '_slider','_move_button']
+        button = ['_buffer_button','_save_button',
+                  '_pen_button','_clear_button',
+                  '_slider','_move_button',"_marker_button"]
         
         # Удаляем через цикл
         for name in button:
             if hasattr(self, name):
                 getattr(self, name).deleteLater()
                 delattr(self, name)      
-
 
         # Скрываем резиновую ленту
         self._rubber_band.hide()
@@ -189,20 +163,48 @@ class ScreenSelector(QMainWindow):
         # Перерисовываем окно
         self.update()
         # Возвращаем полностью затемненный экран
-        self.setStyleSheet("background-color: rgba(0, 0, 0, 255);") 
-    #сигналы    
-    def click_save_buffer(self)-> None:
+        self.setStyleSheet("background-color: rgba(0, 0, 0, 255);")         
+
+    def show_popup(self, message:str)-> None:
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle("Ошибка")
+        msg_box.setIcon(QMessageBox.Information)
+        msg_box.setText(message)
+        msg_box.exec()     
+
+    def _click_save_buffer(self)-> None:
+        logger.info("Сохранить в буффер")
         self.save_buffer_signal.emit(self.x1, self.y1, self.x2, self.y2)
-        
-    def click_draw_button(self)-> None:
-        self.draw_signal.emit()
 
-    def click_save_button(self)-> None:
-        self.click_save_signal.emit(self.x1, self.y1, self.x2, self.y2)
-        self._exit()
+    def _click_save_local(self) -> None:
+        logger.info("Сохранить на пк")
+        self.save_local_signal.emit(self.x1, self.y1, self.x2, self.y2)
+    
+    def _click_pen_button(self) -> None:
+        logger.info("Выбрана ручка")
+        self.choose_pen_signal.emit()
 
-    def click_clear_paint_button(self)-> None:
-        self.clear_paint_signal.emit()
+    def _click_marker_button(self) -> None:
+        logger.info("Выбран маркер")
+        self.choose_marker_signal.emit()
+    
+    def  _click_clear_button (self)-> None:
+        logger.info("Выбрана отчистка полотна")
+        self.choose_clean_signal.emit()
 
-    def _slider_update(self,value)-> None:
-        self.slider_update_signal.emit(value)
+    def set_pen_button_color(self)-> None:    
+        color = self.model.load_color()
+        self._pen_button.setStyleSheet(f"background-color : {color}")
+        self._pen_button.update()
+
+    def set_marker_button_color(self)-> None:    
+        marker_color = self.model.load_marker_color()
+        self._marker_button.setStyleSheet(f"background-color : {marker_color}")
+
+    def _slider_update(self,value):
+        self.model.save_pen_size(value)
+        self.paint.set_pen_size(value)
+
+    def _load_step(self):
+        self.step = self.model.load_pen_size()
+        self.paint.set_pen_size(self.step)

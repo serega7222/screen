@@ -1,4 +1,4 @@
-/*style.css/
+/*static\style.css/
 /*Сохранить в буффер*/
 QCheckBox#buffer_button::indicator {
     width: 40px;   /* Ширина индикатора */
@@ -9,7 +9,7 @@ QCheckBox#buffer_button::indicator {
 }
 
 QCheckBox#buffer_button::indicator {
-  background-image: url(icon/copy.png); 
+  background-image: url(static/icon/copy.png); 
   width: 40px; 
   height: 40px; 
 }
@@ -30,7 +30,7 @@ QCheckBox#save_button::indicator {
 }
 
 QCheckBox#save_button::indicator {
-  background-image: url(icon/floppy-disk.png); 
+  background-image: url(static/icon/floppy-disk.png); 
   width: 40px; 
   height: 40px; 
 }
@@ -40,8 +40,8 @@ QCheckBox#save_button::indicator:hover {
 }
 
 
-/* Кнопка рисовать*/
-QCheckBox#draw_button::indicator {
+/* Кнопка ручка*/
+QCheckBox#Pen_button::indicator {
     width: 40px;   /* Ширина индикатора */
     height: 40px;  /* Высота индикатора */
     
@@ -49,14 +49,35 @@ QCheckBox#draw_button::indicator {
     background-color: rgb(255, 255, 255);
 }
 
-QCheckBox#draw_button::indicator {
-  background-image: url(icon/pencil.png); 
+QCheckBox#Pen_button::indicator {
+  background-image: url(static/icon/pencil.png); 
   width: 40px; 
   height: 40px; 
 }
 
 /* При наведении изменяем фон индикатора */
-QCheckBox#draw_button::indicator:hover {
+QCheckBox#Pen_button::indicator:hover {
+    background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
+}
+
+
+/* Кнопка марекр*/
+QCheckBox#marker_button::indicator {
+    width: 40px;   /* Ширина индикатора */
+    height: 40px;  /* Высота индикатора */
+    
+    border-radius: 5px;
+    background-color: rgb(255, 255, 255);
+}
+
+QCheckBox#marker_button::indicator {
+  background-image: url(static/icon/lighter.png); 
+  width: 40px; 
+  height: 40px; 
+}
+
+/* При наведении изменяем фон индикатора */
+QCheckBox#marker_button::indicator:hover {
     background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
 }
 
@@ -71,7 +92,7 @@ QCheckBox#clear::indicator {
 }
 
 QCheckBox#clear::indicator {
-  background-image: url(icon/trash.png); 
+  background-image: url(static/icon/trash.png); 
   width: 40px; 
   height: 40px; 
 }
@@ -92,7 +113,7 @@ QCheckBox#move_button::indicator {
 }
 
 QCheckBox#move_button::indicator {
-  background-image: url(icon/arrows-out-cardinal.png); 
+  background-image: url(static/icon/arrows-out-cardinal.png); 
   width: 40px; 
   height: 40px; 
 }

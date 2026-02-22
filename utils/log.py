@@ -1,4 +1,4 @@
-#log.py
+#utils/log.py
 import logging
 
 def colored_message(level, message):

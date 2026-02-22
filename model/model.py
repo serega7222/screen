@@ -1,7 +1,7 @@
-#model.py
+#model/model.py
 from dataclasses import dataclass
 from PySide6.QtCore import QSettings 
-from log import logger
+from utils.log import logger
 from typing import Optional
 
 @dataclass
@@ -69,11 +69,22 @@ class Model():
 
     def save_color(self,color:str)  -> None :
         self.settings.setValue("color", color) 
-        print(f"Сохранил цвет {color}")
-    def load_color(self) -> None :
+        logger.info(f"Сохранил цвет {color}")
+
+    def save_marker_color(self,color:str)-> None :
+        self.settings.setValue("marker_color", color) 
+
+    def load_color(self) -> str :
         color = self.settings.value('color')
-        print(f"Загрузил цвет {color}")
+        logger.info(f"Загрузил цвет {color}")
         if color :
             return color
         else:
-            return config.defult_color   
+            return config.defult_color  
+        
+    def load_marker_color(self)-> str :     
+        marker_color = self.settings.value('marker_color')
+        if marker_color:
+            return marker_color
+        else:
+            return config.defult_color  

@@ -3,50 +3,35 @@
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter,QColor,QMouseEvent,QPaintEvent,QPen,QPixmap
 from PySide6.QtWidgets import QWidget
-from model import config
+from model.model import config
+from model.model import Model
 
 class PainterWidget(QWidget):
-    size_pen_signal = Signal()
     """Создает прозрачное полотно по которрому можно рисовать"""
-    def __init__(self,)-> None:
+    def __init__(self,model:Model)-> None:
         super().__init__()
-        self.def_size = None
-        self.def_color = None
-    def _create_ui(self,width:int ,height:int,pos_x:int,pos_y:int)-> None:
+        self.model = model
+        
+
+    def create_ui(self,width:int ,height:int,pos_x:int,pos_y:int)-> None:
         """Сам процесс создания"""
         self.setFixedSize(width, height)
         self.move(pos_x,pos_y)
         self.pixmap = QPixmap(self.size())
         self.pixmap.fill(QColor(0, 0, 0, 1))
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.CustomizeWindowHint)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.CustomizeWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground, True)      
         self.previous_pos = None
         self.painter = QPainter()
         self.pen = QPen()
-        #посылка сигнала что экземляр создан
-        self.size_pen_signal.emit()
-        
-        self.pen.setColor(QColor(self.def_color))
-        self.pen.setWidth(self.def_size )
-        self.pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        self.pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        self._load_defalt_color()
+        self.pen.setWidth(10)
 
-
+        self.pen.setCapStyle(Qt.PenCapStyle.RoundCap)  # Закругленные концы
+        self.pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin) 
         self.show()
 
-    def change_color(self,color:str)-> None:
-        self.pen.setColor(QColor(color))
-    def load_color(self,color:str)-> None:
-        self.def_color = color
-    def clear_paint(self)-> None:
-        self.pixmap.fill(QColor(0, 0, 0, 1))
-        self.update()
-
-    def set_size(self,size:int)-> None:
-        self.pen.setWidth(size)
-
-    def defult_size(self,size:int) -> None:
-        self.def_size  = size
+ 
         
     def paintEvent(self, event: QPaintEvent)-> None:
         """Override method from QWidget
@@ -92,5 +77,25 @@ class PainterWidget(QWidget):
         self.previous_pos = None
         QWidget.mouseReleaseEvent(self, event)
 
-    def start_paint(self,width:int,height:int,pos_x:int,pos_y:int)-> None:
-        self._create_ui(width,height,pos_x,pos_y)
+    def close_paint(self)-> None:  
+        return super().close()
+    
+    def _load_defalt_color(self)-> None:  
+       x = self.model.load_color()
+       self.pen.setColor(x)    
+
+    def change_color_pen(self,color)-> None:  
+        self.pen.setColor(color)
+        
+    def set_pen_size(self,value)-> None:  
+        self.pen.setWidth(value)
+
+    def change_marker_color(self,color)-> None:  
+        
+        qcolor = QColor(color)
+        qcolor.setAlpha(20)  # Устанавливаем прозрачность здесь
+        self.pen.setColor(qcolor)     
+
+    def clear_paint(self)-> None: 
+        self.pixmap.fill(QColor(0, 0, 0, 1))
+        self.update()

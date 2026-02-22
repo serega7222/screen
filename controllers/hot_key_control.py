@@ -1,13 +1,15 @@
-#controllers/hot_key.py
+#controllers/hot_key_control.py
 from PySide6.QtCore import  QThread, Signal 
 import keyboard
-from log import logger
 from keyboard import KeyboardEvent
+from utils.log import logger
 
-class HotKey(QThread):
+
+class WatchPress(QThread):
     """Отслеживает горячие клавишы"""
-    hot_key_signal = Signal(str)
-    screen_signal = Signal()
+    change_hot_key_signal = Signal(str)
+    key_pressed_signal = Signal()
+
     def __init__(self)-> None:
         super().__init__()
         self.lst_hot_key = set()
@@ -17,14 +19,13 @@ class HotKey(QThread):
         keyboard.on_press(self.key_pressed)
         logger.info("Отслеживание нажатий")
         while self.flag:
-            self.msleep(100)  # Не грузит CPU
+            self.msleep(100)  
 
-    def check_press_hot_key(self)-> None:
-        keyboard.add_hotkey('ctrl+shift', self.trigger_hotkey)
+
 
     def trigger_hotkey(self)-> None: 
         logger.info("Нажаты горячие клавишы")
-        self.screen_signal.emit()
+        self.key_pressed_signal.emit()
 
     def key_pressed(self,event:KeyboardEvent)-> None:
         
@@ -32,7 +33,7 @@ class HotKey(QThread):
             self.lst_hot_key.add(event.name)
             if len(self.lst_hot_key) == 2 :
                 text = "+".join(self.lst_hot_key)
-                self.hot_key_signal.emit(text)
+                self.change_hot_key_signal.emit(text)
                 self.lst_hot_key.clear()
                 self.pause()
             
@@ -42,3 +43,5 @@ class HotKey(QThread):
     def stop(self)-> None:
         keyboard.unhook_all()
         super().quit() 
+    def check_press_hot_key(self)-> None:
+        keyboard.add_hotkey('ctrl+shift', self.trigger_hotkey)        
