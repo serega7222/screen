@@ -7,6 +7,7 @@ from model.model import config
 from model.model import Model
 
 class PainterWidget(QWidget):
+    draw_signal = Signal(object,object,object,int,int)
     """Создает прозрачное полотно по которрому можно рисовать"""
     def __init__(self,model:Model)-> None:
         super().__init__()
@@ -57,15 +58,14 @@ class PainterWidget(QWidget):
         Called when user moves and clicks on the mouse
 
         """
-        current_pos = event.position().toPoint()
-        self.painter.begin(self.pixmap)
-        self.painter.setRenderHints(QPainter.RenderHint.Antialiasing, True)
-        self.painter.setPen(self.pen)
-        self.painter.drawLine(self.previous_pos, current_pos)
-        self.painter.end()
-        self.previous_pos = current_pos
-        self.update()
-
+        self.current_pos = event.position().toPoint()
+        color = self.pen.color()
+        width = self.pen.width()
+        alpha = color.alpha()
+       
+        self.draw_signal.emit(self.current_pos,self.previous_pos,color,width,alpha)
+        
+        #self.draw()
         QWidget.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event: QMouseEvent)-> None:
@@ -92,10 +92,29 @@ class PainterWidget(QWidget):
 
     def change_marker_color(self,color)-> None:  
         
-        qcolor = QColor(color)
-        qcolor.setAlpha(20)  # Устанавливаем прозрачность здесь
-        self.pen.setColor(qcolor)     
+        self.qcolor = QColor(color)
+        self.qcolor.setAlpha(20)  # Устанавливаем прозрачность здесь
+        self.pen.setColor( self.qcolor)     
 
     def clear_paint(self)-> None: 
         self.pixmap.fill(QColor(0, 0, 0, 1))
+        self.update()
+
+    def draw(self,lines):
+        
+        self.painter.begin(self.pixmap)
+        self.painter.setRenderHints(QPainter.RenderHint.Antialiasing, True)
+        self.painter.setPen(self.pen)
+        for start, end, color,width,alpha in lines:
+            qcolor = QColor(color)
+            # Устанавливаем прозрачность
+            qcolor.setAlpha(alpha)
+            # Создаем перо
+            pen = QPen(qcolor, width)
+            self.painter.setPen(pen)
+            self.painter.drawLine(start, end)
+
+        #self.painter.drawLine(self.previous_pos, self.current_pos)
+        self.painter.end()
+        self.previous_pos = self.current_pos
         self.update()

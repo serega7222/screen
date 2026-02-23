@@ -122,3 +122,44 @@ QCheckBox#move_button::indicator {
 QCheckBox#move_button::indicator:hover {
     background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
 }
+
+/* кнопка веперед */
+QCheckBox#next::indicator {
+    width: 40px;   /* Ширина индикатора */
+    height: 40px;  /* Высота индикатора */
+    
+    border-radius: 5px;
+    background-color: rgb(255, 255, 255);
+}
+
+QCheckBox#next::indicator {
+  background-image: url(static/icon/skip_next.png); 
+  width: 40px; 
+  height: 40px; 
+}
+
+/* При наведении изменяем фон индикатора */
+QCheckBox#next::indicator:hover {
+    background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
+}
+
+
+/* кнопка назад*/
+QCheckBox#prev::indicator {
+    width: 40px;   /* Ширина индикатора */
+    height: 40px;  /* Высота индикатора */
+    
+    border-radius: 5px;
+    background-color: rgb(255, 255, 255);
+}
+
+QCheckBox#prev::indicator {
+  background-image: url(static/icon/skip_previous.png); 
+  width: 40px; 
+  height: 40px; 
+}
+
+/* При наведении изменяем фон индикатора */
+QCheckBox#prev::indicator:hover {
+    background-color: rgb(116, 116, 116);  /* Светло-серый фон при наведении */
+}

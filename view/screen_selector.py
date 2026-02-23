@@ -15,6 +15,8 @@ class ScreenSelector(QMainWindow):
     choose_pen_signal = Signal()
     choose_marker_signal = Signal()
     choose_clean_signal = Signal()
+    next_signal = Signal()
+    prev_signal = Signal()
     def __init__(self,paint:PainterWidget,model:Model) -> None:
         super().__init__()
         # Окно на весь экран, без рамок, поверх остальных
@@ -112,6 +114,14 @@ class ScreenSelector(QMainWindow):
         self._clear_button .clicked.connect(self._click_clear_button)
         self._clear_button .setObjectName("clear")
 
+        self._next_button = QCheckBox("next", self.tool_container) 
+        self._next_button .clicked.connect(self._click_next_button)
+        self._next_button .setObjectName("next")
+
+        self._prev_button = QCheckBox("prev", self.tool_container) 
+        self._prev_button .clicked.connect(self._click_prev_button)
+        self._prev_button .setObjectName("prev")
+
         self._slider = QSlider(Qt.Vertical)
         self._load_step()
         self._slider.setRange(0, 100) # Диапазон от 0 до 100
@@ -123,6 +133,8 @@ class ScreenSelector(QMainWindow):
         layout.addWidget(self._save_button)
         layout.addWidget(self._pen_button)
         layout.addWidget(self._marker_button)
+        layout.addWidget(self._next_button)
+        layout.addWidget(self._prev_button)
         layout.addWidget(self._clear_button )
         layout.addWidget(self._slider)
         
@@ -142,7 +154,7 @@ class ScreenSelector(QMainWindow):
         #удаление кнопко
         button = ['_buffer_button','_save_button',
                   '_pen_button','_clear_button',
-                  '_slider','_move_button',"_marker_button"]
+                  '_slider','_move_button',"_marker_button","_next_button","_prev_button"]
         
         # Удаляем через цикл
         for name in button:
@@ -208,3 +220,11 @@ class ScreenSelector(QMainWindow):
     def _load_step(self):
         self.step = self.model.load_pen_size()
         self.paint.set_pen_size(self.step)
+
+    def _click_next_button(self):
+        self.next_signal.emit()
+        logger.info("Шаг вперед")    
+
+    def _click_prev_button(self):
+        self.prev_signal.emit()
+        logger.info("Шаг назад")         

@@ -11,6 +11,7 @@ from controllers.buffer_save_control import BufferSave
 from controllers.local_save_control import LocalSave
 from controllers.pen_controller import PenController
 from controllers.marker_control import MarkerControl
+from controllers.undo_controll import UndoControl
 from model.model import Model
 
 if __name__ == "__main__":
@@ -29,6 +30,7 @@ if __name__ == "__main__":
     local_save = LocalSave(screen_selector,trey,main)
     pen = PenController(screen_selector,paint,model)
     marker = MarkerControl(screen_selector,paint,model)
+    undo_controll = UndoControl(screen_selector,paint)
     watcher.check_press_hot_key()
     main_screen_controll = MainScreenControl(main,model,watcher,screen_selector)
     
