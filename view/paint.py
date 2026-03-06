@@ -9,7 +9,7 @@ from model.model import Model
 class PainterWidget(QWidget):
     pen_move_signal = Signal(object,object,object,int,int)
     pen_is_up_signal = Signal()
-
+    clear_lst_signal = Signal()
     """Создает прозрачное полотно по которрому можно рисовать"""
     def __init__(self,model:Model)-> None:
         super().__init__()
@@ -80,7 +80,9 @@ class PainterWidget(QWidget):
         self.pen_is_up_signal.emit()
         QWidget.mouseReleaseEvent(self, event)
         self.points.clear()
+
     def close_paint(self)-> None:  
+        self.clear_lst_signal.emit()
         return super().close()
     
     def _load_defalt_color(self)-> None:  
@@ -129,3 +131,5 @@ class PainterWidget(QWidget):
         self.painter.end()
         self.previous_pos = self.current_pos
         self.update()
+
+

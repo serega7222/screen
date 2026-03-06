@@ -14,6 +14,7 @@ class UndoControl():
     def _coonect_signal (self) -> None:  
         self.paint.pen_move_signal.connect(self._pen_move)
         self.paint.pen_is_up_signal.connect(self._pen_is_up)
+        self.paint.clear_lst_signal.connect(self._click_clear)
         self.screen.choose_clean_signal.connect(self._click_clear)
         self.screen.prev_signal.connect(self._click_prev)
 
