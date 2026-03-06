@@ -17,6 +17,7 @@ class ScreenSelector(QMainWindow):
     choose_clean_signal = Signal()
     next_signal = Signal()
     prev_signal = Signal()
+    exit_signal = Signal()
     def __init__(self,paint:PainterWidget,model:Model) -> None:
         super().__init__()
         # Окно на весь экран, без рамок, поверх остальных
@@ -111,7 +112,7 @@ class ScreenSelector(QMainWindow):
         self._marker_button.setObjectName("marker_button")
 
         self._clear_button = QCheckBox("clear", self.tool_container) 
-        self._clear_button .clicked.connect(self._click_clear_button)
+        self._clear_button .clicked.connect(self.click_clear_button)
         self._clear_button .setObjectName("clear")
 
         self._next_button = QCheckBox("next", self.tool_container) 
@@ -148,7 +149,8 @@ class ScreenSelector(QMainWindow):
         self._clear()
         self.close() # Закрыть окно после выбора
         self.paint.close_paint()
-    
+        #self.exit_signal.emit()
+        
     def _clear(self)-> None:
         """Очищает выделение и сбрасывает состояние"""
         #удаление кнопко
@@ -200,7 +202,7 @@ class ScreenSelector(QMainWindow):
         logger.info("Выбран маркер")
         self.choose_marker_signal.emit()
     
-    def  _click_clear_button (self)-> None:
+    def  click_clear_button (self)-> None:
         logger.info("Выбрана отчистка полотна")
         self.choose_clean_signal.emit()
 
@@ -213,18 +215,18 @@ class ScreenSelector(QMainWindow):
         marker_color = self.model.load_marker_color()
         self._marker_button.setStyleSheet(f"background-color : {marker_color}")
 
-    def _slider_update(self,value):
+    def _slider_update(self,value)-> None:  
         self.model.save_pen_size(value)
         self.paint.set_pen_size(value)
 
-    def _load_step(self):
+    def _load_step(self)-> None:  
         self.step = self.model.load_pen_size()
         self.paint.set_pen_size(self.step)
 
-    def _click_next_button(self):
+    def _click_next_button(self)-> None:  
         self.next_signal.emit()
         logger.info("Шаг вперед")    
 
-    def _click_prev_button(self):
+    def _click_prev_button(self)-> None:  
         self.prev_signal.emit()
         logger.info("Шаг назад")         

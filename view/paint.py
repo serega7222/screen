@@ -1,19 +1,21 @@
 #view/paint_screen.py
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPainter,QColor,QMouseEvent,QPaintEvent,QPen,QPixmap
+from PySide6.QtCore import Qt, Signal,QPoint
+from PySide6.QtGui import QPainter,QColor,QMouseEvent,QPaintEvent,QPen,QPixmap,QPolygon
 from PySide6.QtWidgets import QWidget
 from model.model import config
 from model.model import Model
 
 class PainterWidget(QWidget):
-    draw_signal = Signal(object,object,object,int,int)
+    pen_move_signal = Signal(object,object,object,int,int)
+    pen_is_up_signal = Signal()
+
     """Создает прозрачное полотно по которрому можно рисовать"""
     def __init__(self,model:Model)-> None:
         super().__init__()
         self.model = model
+        self.points = QPolygon()
         
-
     def create_ui(self,width:int ,height:int,pos_x:int,pos_y:int)-> None:
         """Сам процесс создания"""
         self.setFixedSize(width, height)
@@ -28,8 +30,8 @@ class PainterWidget(QWidget):
         self._load_defalt_color()
         self.pen.setWidth(10)
 
-        self.pen.setCapStyle(Qt.PenCapStyle.RoundCap)  # Закругленные концы
-        self.pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin) 
+
+
         self.show()
 
  
@@ -63,7 +65,7 @@ class PainterWidget(QWidget):
         width = self.pen.width()
         alpha = color.alpha()
        
-        self.draw_signal.emit(self.current_pos,self.previous_pos,color,width,alpha)
+        self.pen_move_signal.emit(self.current_pos,self.previous_pos,color,width,alpha)
         
         #self.draw()
         QWidget.mouseMoveEvent(self, event)
@@ -75,8 +77,9 @@ class PainterWidget(QWidget):
 
         """
         self.previous_pos = None
+        self.pen_is_up_signal.emit()
         QWidget.mouseReleaseEvent(self, event)
-
+        self.points.clear()
     def close_paint(self)-> None:  
         return super().close()
     
@@ -93,28 +96,36 @@ class PainterWidget(QWidget):
     def change_marker_color(self,color)-> None:  
         
         self.qcolor = QColor(color)
-        self.qcolor.setAlpha(20)  # Устанавливаем прозрачность здесь
+        self.qcolor.setAlpha(50)  # Устанавливаем прозрачность здесь
         self.pen.setColor( self.qcolor)     
 
     def clear_paint(self)-> None: 
         self.pixmap.fill(QColor(0, 0, 0, 1))
         self.update()
 
-    def draw(self,lines):
-        
+    def draw(self, lines: list) -> None:
         self.painter.begin(self.pixmap)
         self.painter.setRenderHints(QPainter.RenderHint.Antialiasing, True)
-        self.painter.setPen(self.pen)
+        self.painter.setPen(self.pen)        
+        self.painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+
         for start, end, color,width,alpha in lines:
+            
             qcolor = QColor(color)
             # Устанавливаем прозрачность
             qcolor.setAlpha(alpha)
             # Создаем перо
-            pen = QPen(qcolor, width)
-            self.painter.setPen(pen)
-            self.painter.drawLine(start, end)
-
-        #self.painter.drawLine(self.previous_pos, self.current_pos)
+            self.pen = QPen(qcolor, width)
+            self.pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            self.pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+            
+            self.painter.setPen(self.pen)
+            self.points.append(QPoint(start))  # Первая точка
+            self.points.append(QPoint(end))# Вторая точка
+        
+        
+            self.painter.drawPolyline(self.points)
+            self.points.clear()
         self.painter.end()
         self.previous_pos = self.current_pos
         self.update()
