@@ -24,6 +24,7 @@ class MainScreenControl():
         self.main_screen.signal_hot_key.connect(self._press_hot_key_btn)
         self.warcher.change_hot_key_signal.connect(self._change_hot_key)
         self.warcher.key_pressed_signal.connect(self._show_selector)
+        
     @Slot()
     def _open_dialog(self)-> None:
         logger.info("Нажата кнопка путь сохранения")

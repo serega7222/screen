@@ -7,7 +7,7 @@ from PySide6.QtGui import ( QAction ,QCloseEvent)
 from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtCore import QObject
 
-class Trey(QObject):
+class Tray(QObject):
     def __init__(self, main_window: MainScreen)-> None:
         super().__init__(main_window)  
         self.main_window = main_window

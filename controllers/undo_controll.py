@@ -9,9 +9,9 @@ class UndoControl():
         self.screen = sceen
         self.paint = paint
         self.lst_point = []
-        self._coonect_signal()
+        self._connect_signals()
 
-    def _coonect_signal (self) -> None:  
+    def _connect_signals (self) -> None:  
         self.paint.pen_move_signal.connect(self._pen_move)
         self.paint.pen_is_up_signal.connect(self._pen_is_up)
         self.paint.clear_lst_signal.connect(self._click_clear)

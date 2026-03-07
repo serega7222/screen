@@ -9,7 +9,7 @@ class AppConfig():
     app_name : str = "Скриншотер экрана"
     app_min_height : int = 100
     app_min_width : int  = 500
-    defult_color : str = "blue"
+    default_color : str = "blue"
     defult_pen_size : int = 1
     defult_hot_key : str = "shift + ctrl"
 
@@ -80,11 +80,11 @@ class Model():
         if color :
             return color
         else:
-            return config.defult_color  
+            return config.default_color  
         
     def load_marker_color(self)-> str :     
         marker_color = self.settings.value('marker_color')
         if marker_color:
             return marker_color
         else:
-            return config.defult_color  
+            return config.default_color  

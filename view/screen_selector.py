@@ -149,6 +149,7 @@ class ScreenSelector(QMainWindow):
         self._clear()
         self.close() # Закрыть окно после выбора
         self.paint.close_paint()
+        
         #self.exit_signal.emit()
         
     def _clear(self)-> None:

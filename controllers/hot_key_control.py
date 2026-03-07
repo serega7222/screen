@@ -6,7 +6,7 @@ from utils.log import logger
 
 
 class WatchPress(QThread):
-    """Отслеживает горячие клавишы"""
+    """Отслеживает горячие клавишы """
     change_hot_key_signal = Signal(str)
     key_pressed_signal = Signal()
 
@@ -15,6 +15,7 @@ class WatchPress(QThread):
         self.lst_hot_key = set()
         
     def run(self)-> None:
+        
         self.flag = True
         keyboard.on_press(self.key_pressed)
         logger.info("Отслеживание нажатий")
@@ -24,11 +25,12 @@ class WatchPress(QThread):
 
 
     def trigger_hotkey(self)-> None: 
+        """Срабатывает если нажаты клавиши из функции check_press_hot_key """
         logger.info("Нажаты горячие клавишы")
         self.key_pressed_signal.emit()
 
     def key_pressed(self,event:KeyboardEvent)-> None:
-        
+
         if self.flag:
             self.lst_hot_key.add(event.name)
             if len(self.lst_hot_key) == 2 :
@@ -43,5 +45,6 @@ class WatchPress(QThread):
     def stop(self)-> None:
         keyboard.unhook_all()
         super().quit() 
+
     def check_press_hot_key(self)-> None:
         keyboard.add_hotkey('ctrl+shift', self.trigger_hotkey)        
