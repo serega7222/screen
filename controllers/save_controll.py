@@ -17,10 +17,15 @@ class SaveMode():
 
 class SaveControll():
     """Отвечает за сохранение  в буффере обмена либо локально на пк"""
-    def __init__(self,screen:ScreenSelector,trey:Tray,main:MainScreen)-> None:
+    def __init__(self,screen:ScreenSelector,tray:Tray,main:MainScreen)-> None:
         self.screen = screen
-        self.trey = trey
+        self.tray = tray
         self.main = main
+        self._connect_signal()
+
+    def _connect_signal(self):
+        """Принимает сигналы из view/selector_screen.py в зависимости от нажатой кнопки передаются разные режимы сохранения"""
+
         self.screen.save_buffer_signal.connect(
             lambda x1, y1, x2, y2: self._save(x1, y1, x2, y2, SaveMode.BUFFER)
         )
@@ -30,6 +35,16 @@ class SaveControll():
 
     @Slot(int, int, int, int)     
     def _save(self,x1:int, y1:int, x2:int, y2:int,mode:SaveMode)-> None:
+        """Функция срабатывает при получении сигнала  из view/selector_screen.py 
+        Args:
+            x1, y1: координаты левого верхнего угла выделенной области
+            x2, y2: координаты правого нижнего угла выделенной области
+            mode: режим сохранения (SaveMode.BUFFER или SaveMode.LOCAL)  
+        Note:
+            Перед сохранением проверяет, что область выделения не пустая.
+            При ошибках показывает всплывающее окно и логирует проблем     
+        """
+        
         """Проверяет не пустое ли выделение"""
         if x1 >= x2 or y1 >= y2:
             self.screen._exit()
@@ -41,7 +56,7 @@ class SaveControll():
         if mode == "buffer":
             """Сохраняет в буффер"""
             try:
-                logger.info("Нажато сохрнаить в буфере")
+                logger.info("Нажато 'сохранить в буфер'")
                 self.output = io.BytesIO()
                 self.img.convert('RGB').save(self.output, 'BMP')
                 data = self.output.getvalue()[14:]  
@@ -50,13 +65,14 @@ class SaveControll():
                 win32clipboard.EmptyClipboard()
                 win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
                 win32clipboard.CloseClipboard() 
-                logger.success("Успешно сохраненно в буфер")                  
+                logger.success("Успешно сохранено в буфер")                  
                 self.screen._exit()
-                self.trey.message_save_buffer()    
+                self.tray.message_save_buffer()    
             except Exception as e :
                 self.screen._exit()
                 self.screen.show_popup(f"{e}")
                 logger.error("Ошибка,не удалось сохранить в буффер")  
+
         elif mode == "local":
             """Сохраняет локально"""
             try :
@@ -67,7 +83,7 @@ class SaveControll():
                 self.img.save(save_path, "PNG")
                 self.screen._exit()
                 logger.success("Сохранено на пк")
-                self.trey.message_save_local(save_path)                
+                self.tray.message_save_local(save_path)                
             except FileNotFoundError :
                 self.screen._exit()
                 logger.error(f"произошла ошибка некоректный путь сохранения")

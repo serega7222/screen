@@ -1,4 +1,4 @@
-#view/paint_screen.py
+#view/paint.py
 
 from PySide6.QtCore import Qt, Signal,QPoint
 from PySide6.QtGui import QPainter,QColor,QMouseEvent,QPaintEvent,QPen,QPixmap,QPolygon

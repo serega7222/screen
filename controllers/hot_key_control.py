@@ -15,7 +15,7 @@ class WatchPress(QThread):
         self.lst_hot_key = set()
         
     def run(self)-> None:
-        
+        """Срабатывает при нажатие кнопки горячие клавишы"""
         self.flag = True
         keyboard.on_press(self.key_pressed)
         logger.info("Отслеживание нажатий")
@@ -25,7 +25,11 @@ class WatchPress(QThread):
 
 
     def trigger_hotkey(self)-> None: 
-        """Срабатывает если нажаты клавиши из функции check_press_hot_key """
+        """Срабатывает если нажаты клавиши из функции check_press_hot_key 
+        посылает сигнал в main_screen_controll.py 
+        
+        
+        """
         logger.info("Нажаты горячие клавишы")
         self.key_pressed_signal.emit()
 
@@ -47,4 +51,5 @@ class WatchPress(QThread):
         super().quit() 
 
     def check_press_hot_key(self)-> None:
+        """Включается в main.py нужна что бы отслеживать нажаты ли горячие клавиши """
         keyboard.add_hotkey('ctrl+shift', self.trigger_hotkey)        
