@@ -77,8 +77,8 @@ class ScreenSelector(QMainWindow):
         x = self.selected_rect.x() + self.selected_rect.width()
         y = self.selected_rect.y()
         
-        # Создаем контейнер как отдельное окно (без родителя)
-        self.tool_container = QWidget()  # Убираем self из параметров!
+        
+        self.tool_container = QWidget()  
         self.tool_container.setWindowFlags(
             Qt.FramelessWindowHint |  # Без рамки
             Qt.WindowStaysOnTopHint |  # Поверх всех окон
@@ -91,7 +91,7 @@ class ScreenSelector(QMainWindow):
         layout = QVBoxLayout(self.tool_container)
         
         # Создаем кнопки с родителем tool_container
-        self._move_button = MoveWidget(self.tool_container,self.tool_container)
+        self._move_button = MoveWidget(self.tool_container)
         self._move_button.setObjectName("move_button")
                
 
