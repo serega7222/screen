@@ -93,7 +93,7 @@ class PainterWidget(QWidget):
     #публичный метод
     def close_paint(self)-> None:  
         """Вызывается в view/selector_screen.py, в методе _exit()
-        закрывает виджет рисования и посылает сигнал что нужно отчистить список в controllers\undo_controll.py"""
+        закрывает виджет рисования и посылает сигнал что нужно отчистить список в controllers\\undo_controll.py"""
         self.clear_lst_signal.emit()
         return super().close()
     
@@ -118,7 +118,7 @@ class PainterWidget(QWidget):
         self.update()
 
     def draw(self, lines: list) -> None:
-        """Функция которая рисует линии на полотне вызывается из controllers\undo_controll.py в методе _pen_move
+        """Функция которая рисует линии на полотне вызывается из controllers\\undo_controll.py в методе _pen_move
         args 
             lines : получает список в котором содержится 
             начальная позиция курсора ,конечная позиция курсора,цвет линии ,толщина линии, прозрачность линии
