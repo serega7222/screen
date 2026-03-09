@@ -47,7 +47,7 @@ class SaveControll():
         
         """Проверяет не пустое ли выделение"""
         if x1 >= x2 or y1 >= y2:
-            self.screen._exit()
+            self.screen.exit()
             self.screen.show_popup("Нельзя сделан скриншот пустого пространства")
             logger.info("Попытка сделать скриншот пустого окна")
             return None           
@@ -66,13 +66,12 @@ class SaveControll():
                 win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
                 win32clipboard.CloseClipboard() 
                 logger.success("Успешно сохранено в буфер")                  
-                self.screen._exit()
                 self.tray.message_save_buffer()    
             except Exception as e :
-                self.screen._exit()
                 self.screen.show_popup(f"{e}")
                 logger.error("Ошибка,не удалось сохранить в буффер")  
-
+            finally:
+                self.screen.exit()
         elif mode == "local":
             """Сохраняет локально"""
             try :
@@ -81,15 +80,14 @@ class SaveControll():
                 filename = f"screenshot_{timestamp}.png"
                 save_path = os.path.join(save_folder, filename)
                 self.img.save(save_path, "PNG")
-                self.screen._exit()
                 logger.success("Сохранено на пк")
                 self.tray.message_save_local(save_path)                
             except FileNotFoundError :
-                self.screen._exit()
                 logger.error(f"произошла ошибка некоректный путь сохранения")
                 self.screen.show_popup(f"Укажи корректный путь сохранения")
             except Exception as e :
-                self.screen._exit()
                 logger.error(f"произошла ошибка {e}")
                 self.screen.show_popup(f"Ошибка {e}")            
 
+            finally:
+                self.screen.exit()

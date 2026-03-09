@@ -17,7 +17,6 @@ class ScreenSelector(QMainWindow):
     choose_clean_signal = Signal()
     next_signal = Signal()
     prev_signal = Signal()
-    exit_signal = Signal()
     def __init__(self,paint:PainterWidget,model:Model) -> None:
         super().__init__()
         # Окно на весь экран, без рамок, поверх остальных
@@ -38,7 +37,7 @@ class ScreenSelector(QMainWindow):
             self._rubber_band.show()
             self._screen_on = False
         else:
-            self._exit()   
+            self.exit()   
             
     def mouseMoveEvent(self, event:QMouseEvent)-> None:
         if self._origin:
@@ -52,7 +51,7 @@ class ScreenSelector(QMainWindow):
         self._load_screen_ui()
         
     def _create_selection_hole(self) -> None:
-        """Создает 'дырку' в затемненном экране"""
+        """Создает 'дырку' в затемненном экране  использую ее что бы показать место выделения"""
         if not self.selected_rect:
             return None
         screen_rect = self.screen().geometry()
@@ -144,7 +143,7 @@ class ScreenSelector(QMainWindow):
         self.set_marker_button_color()
         self.tool_container.show()
 
-    def _exit(self)-> None:
+    def exit(self)-> None:
         self._rubber_band.hide()
         self._clear()
         self.close() # Закрыть окно после выбора
@@ -153,7 +152,7 @@ class ScreenSelector(QMainWindow):
         #self.exit_signal.emit()
         
     def _clear(self)-> None:
-        """Очищает выделение и сбрасывает состояние"""
+        """Очищает полотно и удаляет кнопки"""
         #удаление кнопко
         button = ['_buffer_button','_save_button',
                   '_pen_button','_clear_button',
@@ -181,6 +180,7 @@ class ScreenSelector(QMainWindow):
         self.setStyleSheet("background-color: rgba(0, 0, 0, 255);")         
 
     def show_popup(self, message:str)-> None:
+        """Окно об ошибке"""
         msg_box = QMessageBox()
         msg_box.setWindowTitle("Ошибка")
         msg_box.setIcon(QMessageBox.Information)
