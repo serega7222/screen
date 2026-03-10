@@ -17,12 +17,12 @@ class UndoControl():
         self.paint.pen_is_up_signal.connect(self._pen_is_up)
         self.paint.clear_lst_signal.connect(self._click_clear)
         self.screen.choose_clean_signal.connect(self._click_clear)
-        self.screen.prev_signal.connect(self._click_prev)
+        self.screen.prev_signal.connect(self._undo)
 
-    def _click_next(self)  -> None: 
+    def _redo(self)  -> None: 
         pass
 
-    def _click_prev(self)-> None: 
+    def _undo(self)-> None: 
         """Отменяет предыдущие действие ,удаляя из списка координаты ,
         вызывает при получении сигнала из  #view/selector_screen.py
         после удаления элемента вызывает отрисовку по оставшимся элементам списка ,отрисовка находится в файле view/paint.py функция draw"""

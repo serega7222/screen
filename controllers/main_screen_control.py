@@ -14,7 +14,7 @@ class MainScreenControl():
     def __init__(self,main_screen:MainScreen,model:Model,watcher:WatchPress,screen:ScreenSelector) -> None:
         self.main_screen = main_screen
         self.model = model
-        self.warcher = watcher
+        self.watcher = watcher
         self.screen_selector = screen
         self._load_main_setting()
         self._connect_signal()
@@ -22,8 +22,8 @@ class MainScreenControl():
     def _connect_signal(self)-> None:
         self.main_screen.signal_search_btn.connect(self._open_dialog)
         self.main_screen.signal_hot_key.connect(self._press_hot_key_btn)
-        self.warcher.change_hot_key_signal.connect(self._change_hot_key)
-        self.warcher.key_pressed_signal.connect(self._show_selector)
+        self.watcher.change_hot_key_signal.connect(self._change_hot_key)
+        self.watcher.key_pressed_signal.connect(self._show_selector)
         
     @Slot()
     def _open_dialog(self)-> None:
@@ -56,7 +56,7 @@ class MainScreenControl():
     @Slot()
     def _press_hot_key_btn(self)-> None:
         """Запускает отслеживание нажатых комбинаций клавиш ,запускает функцию run в controllers/hot_key_control.py """
-        self.warcher.start()
+        self.watcher.start()
 
     @Slot(str)
     def _change_hot_key(self,text:str)-> None:
