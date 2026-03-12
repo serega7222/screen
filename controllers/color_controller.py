@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt
 from view.screen_selector import ScreenSelector
 from view.paint import PainterWidget
 from model.model import Model
-
+from view.tool_panel import ToolPanel
 class PenOrMarker():
     MARKER = "marker"
     PEN = "pen"
@@ -14,18 +14,19 @@ class PenOrMarker():
 class ColorPickerController():
     """Открывает диалоговое окно,устанавливает цвет маркера и ручки 
     ,устанавливает цвет заднего фона"""
-    def __init__(self,screen:ScreenSelector,paint:PainterWidget,model:Model)-> None:
+    def __init__(self,screen:ScreenSelector,paint:PainterWidget,model:Model,tool_panel)-> None:
         self.screen = screen
+        self.tool_panel = tool_panel
         self.paint = paint
         self.model = model        
         self._connect_signals()
 
     def _connect_signals(self):
         # Используем lambda для передачи аргумента
-        self.screen.choose_pen_signal.connect(
+        self.tool_panel.choose_pen_signal.connect(
             lambda: self._open_color_picker(PenOrMarker.PEN)
         )
-        self.screen.choose_marker_signal.connect(
+        self.tool_panel.choose_marker_signal.connect(
             lambda: self._open_color_picker(PenOrMarker.MARKER)
         )
 
@@ -48,13 +49,13 @@ class ColorPickerController():
                 if mode == "pen":
                     self.paint.change_color_pen(color)
                     self.model.save_color(color)
-                    self.screen.set_pen_button_color()
+                    self.tool_panel.set_pen_button_color()
                     logger.success(f"Выбран цвет {color}")    
 
                 if mode == "marker" :
                     self.paint.change_marker_color(color)
                     self.model.save_marker_color(color)
-                    self.screen.set_marker_button_color()
+                    self.tool_panel.set_marker_button_color()
                     logger.success(f"Выбран цвет {color}")                                       
 
         else:

@@ -9,7 +9,7 @@ from PIL import  ImageGrab
 import io
 import os
 from datetime import datetime
-
+from view.tool_panel import ToolPanel
 
 class SaveMode():
     BUFFER = "buffer"
@@ -17,7 +17,8 @@ class SaveMode():
 
 class SaveControll():
     """Отвечает за сохранение  в буффере обмена либо локально на пк"""
-    def __init__(self,screen:ScreenSelector,tray:Tray,main:MainScreen)-> None:
+    def __init__(self,screen:ScreenSelector,tray:Tray,main:MainScreen,tool_panel:ToolPanel)-> None:
+        self.tool_panel = tool_panel
         self.screen = screen
         self.tray = tray
         self.main = main
@@ -26,10 +27,10 @@ class SaveControll():
     def _connect_signal(self):
         """Принимает сигналы из view/selector_screen.py в зависимости от нажатой кнопки передаются разные режимы сохранения"""
 
-        self.screen.save_buffer_signal.connect(
+        self.tool_panel.save_buffer_signal.connect(
             lambda x1, y1, x2, y2: self._save(x1, y1, x2, y2, SaveMode.BUFFER)
         )
-        self.screen.save_local_signal.connect(
+        self.tool_panel.save_local_signal.connect(
             lambda x1, y1, x2, y2: self._save(x1, y1, x2, y2, SaveMode.LOCAL)
         )
 

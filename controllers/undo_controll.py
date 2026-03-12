@@ -2,13 +2,15 @@
 from view.screen_selector import ScreenSelector
 from PySide6.QtCore import  Slot
 from view.paint import PainterWidget
+from view.tool_panel import ToolPanel
 from utils.log import logger
 
 class UndoControl():
     """Отвечает за отмену предыдущих действий,так же вызывает функцию рисования"""
-    def __init__(self,screen : ScreenSelector,paint:PainterWidget)-> None:
+    def __init__(self,screen : ScreenSelector,paint:PainterWidget,tool_panel:ToolPanel)-> None:
         self.screen = screen
         self.paint = paint
+        self.tool_panel = tool_panel
         self.lst_point = []
         self._connect_signals()
 
@@ -16,8 +18,8 @@ class UndoControl():
         self.paint.pen_move_signal.connect(self._pen_move)
         self.paint.pen_is_up_signal.connect(self._pen_is_up)
         self.paint.clear_lst_signal.connect(self._click_clear)
-        self.screen.choose_clean_signal.connect(self._click_clear)
-        self.screen.prev_signal.connect(self._undo)
+        self.tool_panel.choose_clean_signal.connect(self._click_clear)
+        self.tool_panel.prev_signal.connect(self._undo)
 
     def _redo(self)  -> None: 
         pass
