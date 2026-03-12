@@ -1,14 +1,13 @@
 #view/selector_screen.py
-from PySide6.QtCore import Qt, QRect, QSize, Signal
-from PySide6.QtWidgets import QMainWindow,QCheckBox,QMessageBox,QRubberBand,QVBoxLayout,QSlider
+from PySide6.QtCore import Qt, QRect, QSize
+from PySide6.QtWidgets import QMainWindow,QRubberBand
 from PySide6.QtGui import QRegion,QMouseEvent
-from PySide6.QtWidgets import QWidget,QMainWindow
+from PySide6.QtWidgets import QMainWindow
 from model.model import Model
-from .move_widget import MoveWidget
 from view.paint import PainterWidget
 from view.tool_panel import ToolPanel
 from utils.log import logger
-
+from PySide6.QtWidgets import QMainWindow,QCheckBox,QMessageBox,QRubberBand,QVBoxLayout,QSlider
 
 class ScreenSelector(QMainWindow):
     """Создает выделение"""
@@ -99,4 +98,10 @@ class ScreenSelector(QMainWindow):
         
         logger.info("ScreenSelector закрыт")
 
-        
+    def show_popup(self, message:str)-> None:
+        """Окно об ошибке"""
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle("Ошибка")
+        msg_box.setIcon(QMessageBox.Information)
+        msg_box.setText(message)
+        msg_box.exec()            

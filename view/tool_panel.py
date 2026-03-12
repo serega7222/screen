@@ -17,7 +17,7 @@ class ToolPanel(QObject):
     choose_clean_signal = Signal()
     next_signal = Signal()
     prev_signal = Signal()  
-    def __init__(self,paint:PainterWidget,model:Model):
+    def __init__(self,paint:PainterWidget,model:Model)-> None:
         super().__init__() 
         self.paint = paint
         self.model = model
@@ -132,13 +132,7 @@ class ToolPanel(QObject):
 
   
 
-    def show_popup(self, message:str)-> None:
-        """Окно об ошибке"""
-        msg_box = QMessageBox()
-        msg_box.setWindowTitle("Ошибка")
-        msg_box.setIcon(QMessageBox.Information)
-        msg_box.setText(message)
-        msg_box.exec()     
+ 
 
     def _click_save_buffer(self)-> None:
         logger.info("Сохранить в буффер")

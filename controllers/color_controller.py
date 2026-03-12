@@ -14,14 +14,14 @@ class PenOrMarker():
 class ColorPickerController():
     """Открывает диалоговое окно,устанавливает цвет маркера и ручки 
     ,устанавливает цвет заднего фона"""
-    def __init__(self,screen:ScreenSelector,paint:PainterWidget,model:Model,tool_panel)-> None:
+    def __init__(self,screen:ScreenSelector,paint:PainterWidget,model:Model,tool_panel:ToolPanel)-> None:
         self.screen = screen
         self.tool_panel = tool_panel
         self.paint = paint
         self.model = model        
         self._connect_signals()
 
-    def _connect_signals(self):
+    def _connect_signals(self)-> None:
         # Используем lambda для передачи аргумента
         self.tool_panel.choose_pen_signal.connect(
             lambda: self._open_color_picker(PenOrMarker.PEN)

@@ -1,7 +1,7 @@
 #utils/log.py
 import logging
 
-def colored_message(level, message):
+def colored_message(level, message)-> str :
     """Добавляет цвет к сообщению"""
     colors = {
         'INFO': '\033[94m',     # Синий
@@ -15,20 +15,20 @@ def colored_message(level, message):
     return f"{color}[{level}] {message}{colors['RESET']}"
 
 class ColoredLogger:
-    def __init__(self):
+    def __init__(self)-> None :
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
     
-    def info(self, msg):
+    def info(self, msg)-> None :
         print(colored_message('INFO', msg))
     
-    def warning(self, msg):
+    def warning(self, msg)-> None :
         print(colored_message('WARNING', msg))
     
-    def error(self, msg):
+    def error(self, msg)-> None :
         print(colored_message('ERROR', msg))
     
-    def success(self, msg):
+    def success(self, msg)-> None :
         print(colored_message('SUCCESS', msg))
 
 logger = ColoredLogger()

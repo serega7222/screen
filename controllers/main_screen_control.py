@@ -64,6 +64,8 @@ class MainScreenControl():
         self.main_screen.change_btn_text(text)
 
     @Slot()
-    def _show_selector(self):
+    def _show_selector(self)-> None:
         """Запускает отображение выделения облости экрана запускается из controllers/hot_key_control функция trigger_hotkey """
         self.screen_selector.show()
+
+        

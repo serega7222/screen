@@ -24,7 +24,7 @@ class SaveControll():
         self.main = main
         self._connect_signal()
 
-    def _connect_signal(self):
+    def _connect_signal(self)-> None:
         """Принимает сигналы из view/selector_screen.py в зависимости от нажатой кнопки передаются разные режимы сохранения"""
 
         self.tool_panel.save_buffer_signal.connect(
