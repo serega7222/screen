@@ -119,18 +119,8 @@ class ToolPanel(QObject):
         
     def clear(self)-> None:
         """Очищает полотно и удаляет кнопки"""
-        #удаление кнопко
-        button = ['_buffer_button','_save_button',
-                  '_pen_button','_clear_button',
-                  '_slider','_move_button',"_marker_button","_next_button","_prev_button"]
-        
-        # Удаляем через цикл
-        for name in button:
-            if hasattr(self, name):
-                getattr(self, name).deleteLater()
-                delattr(self, name)      
 
-  
+        self.tool_container.close()
 
  
 
