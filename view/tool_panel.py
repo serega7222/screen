@@ -35,12 +35,7 @@ class ToolPanel(QObject):
                 - height(): высота выделенной области
         
         """
-        self.selected_rect = selected_rect
-        # Вычисляем координаты из rect
-        self.x1 = selected_rect.x()
-        self.y1 = selected_rect.y()
-        self.x2 = selected_rect.x() + selected_rect.width()
-        self.y2 = selected_rect.y() + selected_rect.height()        
+        self.selected_rect = selected_rect      
         # Вычисляем координаты углов
         self.x1 = selected_rect.x()                          # левый верхний X
         self.y1 = selected_rect.y()                          # левый верхний Y
