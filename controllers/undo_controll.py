@@ -11,7 +11,7 @@ class UndoControl():
         self.screen = screen
         self.paint = paint
         self.tool_panel = tool_panel
-        self.lst_point = []
+        self._lst_point = []
         self._connect_signals()
 
     def _connect_signals(self) -> None:  
@@ -28,17 +28,17 @@ class UndoControl():
         """Отменяет предыдущие действие ,удаляя из списка координаты ,
         вызывает при получении сигнала из  #view/selector_screen.py
         после удаления элемента вызывает отрисовку по оставшимся элементам списка ,отрисовка находится в файле view/paint.py функция draw"""
-        if len(self.lst_point) > 0:
-            self.lst_point.pop()
+        if len(self._lst_point) > 0:
+            self._lst_point.pop()
             self.paint.clear_paint()
-            self.paint.draw(self.lst_point)
+            self.paint.draw(self._lst_point)
         else:
             logger.info("Достигнут конец списка")
 
     def _click_clear(self)-> None: 
         """Удаляет все элементы в списке ,так же очищает полотно от всех рисунков ,
         отчистка полотная находиться в #view/paint.py  функция clear_paint """
-        self.lst_point.clear()
+        self._lst_point.clear()
         self.paint.clear_paint()
     
     @Slot(object,object,object,int,int)
@@ -50,13 +50,13 @@ class UndoControl():
         """
         logger.info("Ручку ведут по полотну")
         
-        self.lst_point.append((args))
-        self.paint.draw(self.lst_point)
+        self._lst_point.append((args))
+        self.paint.draw(self._lst_point)
         
 
     @Slot()
     def _pen_is_up(self)-> None:
         """срабатывает при получении сигнала что левая клавиша мышки поднята сигнал идет из файла view/paint.py функции mouseReleaseEvent"""
         logger.info("Ручка оторвана от полотна")
-        #self.paint.draw(lines = None)
+        
         

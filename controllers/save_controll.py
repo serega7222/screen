@@ -54,7 +54,7 @@ class SaveControll():
             return None           
         self.img = ImageGrab.grab(bbox=(x1, y1, x2,y2))
 
-        if mode == "buffer":
+        if mode == SaveMode.BUFFER:
             """Сохраняет в буффер"""
             try:
                 logger.info("Нажато 'сохранить в буфер'")
@@ -73,7 +73,7 @@ class SaveControll():
                 logger.error("Ошибка,не удалось сохранить в буффер")  
             finally:
                 self.screen.exit()
-        elif mode == "local":
+        elif mode == SaveMode.LOCAL:
             """Сохраняет локально"""
             try :
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

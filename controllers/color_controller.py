@@ -7,6 +7,7 @@ from view.screen_selector import ScreenSelector
 from view.paint import PainterWidget
 from model.model import Model
 from view.tool_panel import ToolPanel
+
 class PenOrMarker():
     MARKER = "marker"
     PEN = "pen"
@@ -30,7 +31,7 @@ class ColorPickerController():
             lambda: self._open_color_picker(PenOrMarker.MARKER)
         )
 
-    def _open_color_picker(self,mode)-> None:
+    def _open_color_picker(self,mode:PenOrMarker)-> None:
         dialog = QColorDialog()
         dialog.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
         dialog.setStyleSheet("""
@@ -46,13 +47,13 @@ class ColorPickerController():
             color = dialog.selectedColor()        
             if color.isValid():
                 color = color.name() 
-                if mode == "pen":
+                if mode == PenOrMarker.PEN:
                     self.paint.change_color_pen(color)
                     self.model.save_color(color)
                     self.tool_panel.set_pen_button_color()
                     logger.success(f"Выбран цвет {color}")    
 
-                if mode == "marker" :
+                if mode == PenOrMarker.MARKER:
                     self.paint.change_marker_color(color)
                     self.model.save_marker_color(color)
                     self.tool_panel.set_marker_button_color()
