@@ -1,8 +1,6 @@
 #view/tool_panel.py
 from PySide6.QtCore import Qt, QRect, QSize, Signal,QObject
-from PySide6.QtWidgets import QMainWindow,QCheckBox,QMessageBox,QRubberBand,QVBoxLayout,QSlider
-from PySide6.QtGui import QRegion,QMouseEvent
-from PySide6.QtWidgets import QWidget,QMainWindow
+from PySide6.QtWidgets import QCheckBox,QVBoxLayout,QSlider,QWidget
 from model.model import Model
 from .move_widget import MoveWidget
 from view.paint import PainterWidget
@@ -120,9 +118,10 @@ class ToolPanel(QObject):
     def clear(self)-> None:
         """Очищает полотно и удаляет кнопки"""
 
-        self.tool_container.close()
+        #self.tool_container.close()
+        self.tool_container.deleteLater()  
+        delattr(self, 'tool_container')
 
- 
 
     def _click_save_buffer(self)-> None:
         logger.info("Сохранить в буффер")

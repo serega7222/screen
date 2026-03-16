@@ -15,7 +15,7 @@ class SaveMode():
     BUFFER = "buffer"
     LOCAL = "local"
 
-class SaveControll():
+class SaveControl():
     """Отвечает за сохранение  в буффере обмена либо локально на пк"""
     def __init__(self,screen:ScreenSelector,tray:Tray,main:MainScreen,tool_panel:ToolPanel)-> None:
         self.tool_panel = tool_panel

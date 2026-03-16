@@ -5,3 +5,4 @@ env/
 .venv/
 ENV/
 test.py
+all_py_files.txt
